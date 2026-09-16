@@ -1,33 +1,24 @@
-# Simple Calendar v32
+# Simple Calendar v33
 
-PWA calendar. Notes stay on the device. **Closed-app reminders** use a **Cloudflare Worker** you paste in the dashboard (**no Wrangler, no Node server**).
+Closed-app Web Push via a **dashboard-pasted Cloudflare Worker** (no Wrangler, no Node server).
 
-v32 is a **reliability** release: a timed event must not silently miss because the app was closed, the URL pointed at GitHub Pages, or a failed push was dropped.
+## Critical fix vs v32
+v32 Worker **padded every push to ~4KB**. FCM/APNs often **reject** that → no alert when the app is closed.  
+v33 uses **minimal aes128gcm padding** (`plaintext + 0x02` only) so payloads stay small.
+
+Also: `/api/health` exposes `lastPush` (from KV `meta:lastPush`); `/api/tick` returns `lastErrors` so **Push doctor** can show why a send failed.
 
 ## Setup
-Follow **[DASHBOARD.md](./DASHBOARD.md)** (clicks + **no alert on phone** checklist).
+1. Paste **`cloudflare-worker.dashboard.js`** into the Worker (replace old code) → Deploy.  
+2. Upload PWA files (`index.html`, `sw.js`, `manifest.json`).  
+3. Follow **[DASHBOARD.md](./DASHBOARD.md)** — set Worker URL, run **Push doctor**, confirm `sent>0` or read `lastErrors`.
 
+## Files
 | File | Where |
 |------|--------|
-| `index.html` `sw.js` `manifest.json` | GitHub Pages / any HTTPS host |
-| `cloudflare-worker.dashboard.js` | Cloudflare Worker (paste) |
-| `DASHBOARD.md` | setup + troubleshooting |
-
-In the app, Closed-app server URL **must** be `https://<worker>.<subdomain>.workers.dev`.  
-On the phone, confirm `https://WORKER/api/health` returns `ok: true`.
-
-## What v32 changes
-- Refuses same-origin Pages as the push server; health-checks `runtime` contains `worker`.
-- **Awaits** sync on every event save / delete / complete / snooze (“Queued on server”).
-- Push fires at **event time** (optional lead minutes, default 0). Unsent items kept **10 minutes** after `fireAt`.
-- Worker **retries** failed sends; deletes only after HTTP 200/201/204 or gone 404/410.
-- Immediate send if due in ≤15s; client also POSTs `/api/tick`.
-- Resubscribes if VAPID keys changed.
-- **Push doctor** + status: reachable / last error / N queued / next fire.
-- iOS Home Screen warning.
-
-## Honest limits
-Web Push cannot play a custom looping alarm after the OS kills the app — OS notification only. Cron ~1 minute. iOS 16.4+ Home Screen. Worker must stay deployed.
+| `index.html` `sw.js` `manifest.json` | Static HTTPS host |
+| `cloudflare-worker.dashboard.js` | Cloudflare Worker paste |
+| `DASHBOARD.md` | Click path + troubleshooting |
 
 ## License
 MIT — see `LICENSE`.

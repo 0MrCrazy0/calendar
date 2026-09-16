@@ -16,7 +16,7 @@
   ],
   "id": "./index.html",
   "lang": "en",
-  "description": "Simple Calendar v32 \u2014 closed-app reminders that cannot silently miss a queued event.",
+  "description": "Simple Calendar v33 \u2014 FCM-safe closed-app Web Push (minimal padding).",
   "categories": [
     "productivity",
     "utilities"

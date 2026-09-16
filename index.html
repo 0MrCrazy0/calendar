@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%236c5ce7'/%3E%3Ctext y='.9em' font-size='70' x='50%25' text-anchor='middle' fill='white'%3E📅%3C/text%3E%3C/svg%3E">
 
   <title>Simple Calendar</title>
-<!-- Simple Calendar v32 — closed-app Web Push via Cloudflare dashboard Worker -->
+<!-- Simple Calendar v33 — FCM-safe Web Push (minimal aes128gcm padding) -->
   <link rel="manifest" href="manifest.json">
 
   <!-- Google Fonts Preconnect -->
@@ -2928,14 +2928,18 @@
 
   async function callTick() {
     const base = getPushServerBase();
-    if (!base) return;
+    if (!base) return null;
     try {
-      await fetch(base + '/api/tick', {
+      const res = await fetch(base + '/api/tick', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{}'
       });
-    } catch (_) {}
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, ...data };
+    } catch (e) {
+      return { ok: false, error: String(e.message || e) };
+    }
   }
 
   async function syncRemindersToServer(opts = {}) {
@@ -2966,13 +2970,26 @@
       lastPushCount = (data.count != null) ? data.count : reminders.length;
       lastPushNextFire = data.nextFireAt || (reminders[0] && reminders[0].fireAt) || null;
       const n = lastPushCount;
-      setPushStatus(n + ' queued' + (lastPushNextFire ? ' · next ' + formatPushWhen(lastPushNextFire) : ''));
+      let statusMsg = n + ' queued' + (lastPushNextFire ? ' · next ' + formatPushWhen(lastPushNextFire) : '');
+      if (data.sentNow) statusMsg += ' · sentNow=' + data.sentNow;
+      if (data.lastErrors && data.lastErrors.length) {
+        lastPushError = 'push err ' + JSON.stringify(data.lastErrors[0]);
+        statusMsg += ' · ERRORS (see doctor)';
+        setPushStatus(statusMsg, true);
+      } else {
+        setPushStatus(statusMsg);
+      }
       renderPushStatusDetail();
       if (opts.toast) {
         showInAppToast(t('pushQueuedOnServer') || t('pushSynced'), n + ' reminder' + (n === 1 ? '' : 's'), 'var(--today)');
       }
       // Harmless if nothing due; covers missing cron for near-term items + wakes send path
-      await callTick();
+      const tick = await callTick();
+      if (tick && tick.lastErrors && tick.lastErrors.length && !lastPushError) {
+        lastPushError = 'tick ' + JSON.stringify(tick.lastErrors[0]);
+        setPushStatus((document.getElementById('pushStatus') || {}).textContent + ' · tick error', true);
+        renderPushStatusDetail();
+      }
       return true;
     } catch (e) {
       console.warn('[Calendar] push sync failed', e);
@@ -3077,7 +3094,7 @@
   async function runPushDoctor() {
     const lines = [];
     const log = (s) => { lines.push(s); doctorLog(lines); };
-    log('Push doctor v32 · ' + new Date().toLocaleString());
+    log('Push doctor v33 · ' + new Date().toLocaleString());
     log('PWA origin: ' + location.origin);
     log('Standalone/Home Screen: ' + (isStandalonePwa() ? 'yes' : 'NO'));
     log('Notification permission: ' + (('Notification' in window) ? Notification.permission : 'unsupported'));
@@ -3094,6 +3111,7 @@
     try {
       const health = await validatePushWorker();
       log('health: ' + JSON.stringify(health));
+      if (health.lastPush) log('health.lastPush: ' + JSON.stringify(health.lastPush));
     } catch (e) {
       log('FAIL health: ' + (e.message || e));
       setPushStatus(String(e.message || e), true);
@@ -3120,10 +3138,29 @@
     }
     const synced = await syncRemindersToServer({ force: true, toast: true });
     log('sync: ' + (synced ? 'ok' : 'FAIL') + ' · queued=' + lastPushCount + ' · next=' + formatPushWhen(lastPushNextFire));
+    log('POST /api/tick (force send of anything due)…');
+    const tick = await callTick();
+    log('tick: ' + JSON.stringify(tick));
+    if (tick && tick.sent > 0) {
+      log('SUCCESS: sent=' + tick.sent + ' (FCM/APNs accepted at least one payload)');
+      setPushStatus('tick sent=' + tick.sent, false);
+    } else if (tick && tick.lastErrors && tick.lastErrors.length) {
+      log('FCM/APNs errors (fix Worker paste if status 413/400):');
+      tick.lastErrors.forEach((err, i) => log('  [' + i + '] ' + JSON.stringify(err)));
+      setPushStatus('tick errors — see Push doctor log', true);
+    } else {
+      log('tick sent=0 (nothing due yet — OK if next fire is in the future)');
+    }
+    try {
+      const health2 = await (await fetch(base + '/api/health', { credentials: 'omit' })).json();
+      if (health2.lastPush) log('health.lastPush after tick: ' + JSON.stringify(health2.lastPush));
+    } catch (_) {}
     log('Queuing 90s test reminder… FULLY CLOSE the PWA after this (swipe away). Cron is ~1 min.');
     await queueTestPush90s();
     log('test queued · wait ~2 minutes with the app closed');
+    log('Must paste cloudflare-worker.dashboard.js v33 (minimal padding) or FCM may reject bodies.');
     log('Done. Cron * * * * * must be set on the Worker or later events will miss.');
+    renderPushStatusDetail();
   }
 
   function flushPushKeepalive() {
