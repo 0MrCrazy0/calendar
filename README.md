@@ -22,3 +22,7 @@ Also: `/api/health` exposes `lastPush` (from KV `meta:lastPush`); `/api/tick` re
 
 ## License
 MIT — see `LICENSE`.
+
+## Icon
+
+`icon.jpeg` — PWA / home-screen icon (512×512).
