@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%236c5ce7'/%3E%3Ctext y='.9em' font-size='70' x='50%25' text-anchor='middle' fill='white'%3E📅%3C/text%3E%3C/svg%3E">
 
   <title>Simple Calendar</title>
-<!-- Simple Calendar v36 — FCM-safe Web Push (minimal aes128gcm padding) -->
+<!-- Simple Calendar v37 -->
   <link rel="manifest" href="manifest.json">
 
   <!-- Google Fonts Preconnect -->
@@ -1390,10 +1390,10 @@
             <span class="slider"></span>
           </label>
         </div>
-        <p style="font-size:11px;color:var(--muted);margin:4px 0 8px;line-height:1.4;" data-i18n="lblPushRemindersHint">Paste cloudflare-worker.dashboard.js v36 (auto VAPID). Put the Worker URL here — no VAPID secrets needed. In-app alerts still work without this.</p>
+        <p style="font-size:11px;color:var(--muted);margin:4px 0 8px;line-height:1.4;" data-i18n="lblPushRemindersHint">Paste cloudflare-worker.dashboard.js v37 (auto VAPID). Put the Worker URL here — no VAPID secrets needed. In-app alerts still work without this.</p>
         <div id="pushRemindersGroup" style="display:none;">
           <label for="pushServerUrl" style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;" data-i18n="lblPushServer">Cloudflare Worker URL (https://….workers.dev)</label>
-          <input type="url" id="pushServerUrl" placeholder="https://simple-calendar.YOUR_SUBDOMAIN.workers.dev" autocomplete="off" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.25);color:var(--text);font-size:13px;margin-bottom:6px;">
+          <input type="url" id="pushServerUrl" placeholder="https://simple-calendar.crzymn05.workers.dev" autocomplete="off" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.25);color:var(--text);font-size:13px;margin-bottom:6px;">
           <p id="pushPlatformHint"></p>
           <div id="pushStatus" style="font-size:12px;color:var(--muted);margin:4px 0 2px;line-height:1.4;font-weight:600;"></div>
           <div id="pushStatusDetail"></div>
@@ -1560,7 +1560,7 @@
       toastDuration: 8,
       snoozeMinutes: 5,
       pushRemindersEnabled: false,
-      pushServerUrl: '',
+      pushServerUrl: 'https://simple-calendar.crzymn05.workers.dev',
       pushLeadMinutes: 0,
       soundEnabled: true,
       soundDuration: 5,
@@ -1591,7 +1591,7 @@
     const notifyGroup = document.getElementById('notifyOptionsGroup');
     if (notifyGroup) notifyGroup.style.display = settings.notifyEnabled ? 'block' : 'none';
     setChecked('pushRemindersToggle', settings.pushRemindersEnabled);
-    setVal('pushServerUrl', settings.pushServerUrl || '');
+    setVal('pushServerUrl', settings.pushServerUrl || DEFAULT_PUSH_WORKER || '');
     const pushGroup = document.getElementById('pushRemindersGroup');
     if (pushGroup) pushGroup.style.display = settings.pushRemindersEnabled ? 'block' : 'none';
     setVal('pushLeadSlider', settings.pushLeadMinutes ?? 0);
@@ -1694,7 +1694,7 @@
       btnStopAlarm: "⏹ Stop",
       btnRequestNotify: "🔔 Allow notifications",
       lblPushReminders: "Closed-app reminders (Web Push)",
-      lblPushRemindersHint: "Must be your Cloudflare Worker URL (https://….workers.dev), NOT this GitHub/Pages site. Paste Worker v36 first — VAPID auto-mints in KV (secrets optional).",
+      lblPushRemindersHint: "Must be your Cloudflare Worker URL (https://….workers.dev), NOT this GitHub/Pages site. Paste Worker v37 first — VAPID auto-mints in KV (secrets optional).",
       lblPushServer: "Cloudflare Worker URL (https://….workers.dev)",
       btnPushSync: "☁ Sync reminders now",
       btnPushTest: "🧪 Test closed-app alert (~90s)",
@@ -2650,8 +2650,10 @@
   let lastPushNextFire = null;
   let lastPushHealth = null;
 
+  const DEFAULT_PUSH_WORKER = 'https://simple-calendar.crzymn05.workers.dev';
+
   function getPushServerBase() {
-    return String(settings.pushServerUrl || '').trim().replace(/\/$/, '');
+    return String(settings.pushServerUrl || DEFAULT_PUSH_WORKER || '').trim().replace(/\/$/, '');
   }
 
   function looksLikeStaticHost(hostname) {
@@ -2746,7 +2748,7 @@
     if (group) group.style.display = settings.pushRemindersEnabled ? 'block' : 'none';
     const urlEl = document.getElementById('pushServerUrl');
     if (urlEl && document.activeElement !== urlEl) {
-      urlEl.value = settings.pushServerUrl || '';
+      urlEl.value = settings.pushServerUrl || DEFAULT_PUSH_WORKER || '';
     }
     const leadEl = document.getElementById('pushLeadSlider');
     const leadVal = document.getElementById('pushLeadVal');
@@ -2789,7 +2791,7 @@
     if (data.hasKv === false) throw new Error('Worker has no KV binding REMINDERS');
     const ver = String(data.version || '');
     if (ver && Number(ver) < 36) {
-      throw new Error('Worker version is ' + ver + ' — re-paste cloudflare-worker.dashboard.js v36 (auto VAPID)');
+      throw new Error('Worker version is ' + ver + ' — re-paste cloudflare-worker.dashboard.js v37 (auto VAPID)');
     }
     if (data.hasVapid !== true) {
       throw new Error('Worker hasVapid=false — ensure KV binding REMINDERS exists (keys auto-mint on first use)');
@@ -3106,11 +3108,11 @@
       const s = Number(status);
       if (s === 403) return '403 → often VAPID mismatch (re-paste secrets + force resubscribe)';
       if (s === 410 || s === 404) return String(s) + ' → subscription gone (re-subscribe)';
-      if (s === 413) return '413 → payload too large (must use v36 bundled Worker)';
-      if (s === 400) return '400 → bad request / crypto (must use v36 bundled Worker)';
+      if (s === 413) return '413 → payload too large (must use v37 bundled Worker)';
+      if (s === 400) return '400 → bad request / crypto (must use v37 bundled Worker)';
       return '';
     };
-    log('Push doctor v36 · ' + new Date().toLocaleString());
+    log('Push doctor v37 · ' + new Date().toLocaleString());
     log('PWA origin: ' + location.origin);
     log('Standalone/Home Screen: ' + (isStandalonePwa() ? 'yes' : 'NO'));
     log('Notification permission: ' + (('Notification' in window) ? Notification.permission : 'unsupported'));
@@ -3129,7 +3131,7 @@
       const health = await validatePushWorker();
       log('health: ' + JSON.stringify(health));
       if (Number(health.version) < 36) {
-        log('WARN: health.version is ' + health.version + ' — re-paste ENTIRE cloudflare-worker.dashboard.js v36');
+        log('WARN: health.version is ' + health.version + ' — re-paste ENTIRE cloudflare-worker.dashboard.js v37');
       }
       log('hasVapid=' + health.hasVapid + ' vapidSource=' + (health.vapidSource || '?'));
       if (health.hasVapid !== true) {
@@ -3213,7 +3215,7 @@
     log('Queuing 90s test reminder… FULLY CLOSE the PWA (swipe away). Cron ~1 min.');
     await queueTestPush90s();
     log('test queued · wait ~2 minutes with app closed + phone locked');
-    log('MUST paste entire cloudflare-worker.dashboard.js v36 (bundled library + auto VAPID in KV).');
+    log('MUST paste entire cloudflare-worker.dashboard.js v37 (bundled library + auto VAPID in KV).');
     log('No manual VAPID paste needed — first enable may take ~1s to mint keys (health.vapidSource=kv).');
     log('iPhone: Add to Home Screen, iOS 16.4+, notifications for this PWA (Safari tab is not enough).');
     log('Done.');
