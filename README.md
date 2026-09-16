@@ -1,10 +1,10 @@
-# Simple Calendar v33
+# Simple Calendar v34
 
 Closed-app Web Push via a **dashboard-pasted Cloudflare Worker** (no Wrangler, no Node server).
 
 ## Critical fix vs v32
 v32 Worker **padded every push to ~4KB**. FCM/APNs often **reject** that → no alert when the app is closed.  
-v33 uses **minimal aes128gcm padding** (`plaintext + 0x02` only) so payloads stay small.
+v34 uses **minimal aes128gcm padding** (`plaintext + 0x02` only) so payloads stay small.
 
 Also: `/api/health` exposes `lastPush` (from KV `meta:lastPush`); `/api/tick` returns `lastErrors` so **Push doctor** can show why a send failed.
 

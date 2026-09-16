@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%236c5ce7'/%3E%3Ctext y='.9em' font-size='70' x='50%25' text-anchor='middle' fill='white'%3E📅%3C/text%3E%3C/svg%3E">
 
   <title>Simple Calendar</title>
-<!-- Simple Calendar v33 — FCM-safe Web Push (minimal aes128gcm padding) -->
+<!-- Simple Calendar v34 — FCM-safe Web Push (minimal aes128gcm padding) -->
   <link rel="manifest" href="manifest.json">
 
   <!-- Google Fonts Preconnect -->
@@ -3096,7 +3096,7 @@
   async function runPushDoctor() {
     const lines = [];
     const log = (s) => { lines.push(s); doctorLog(lines); };
-    log('Push doctor v33 · ' + new Date().toLocaleString());
+    log('Push doctor v34 · ' + new Date().toLocaleString());
     log('PWA origin: ' + location.origin);
     log('Standalone/Home Screen: ' + (isStandalonePwa() ? 'yes' : 'NO'));
     log('Notification permission: ' + (('Notification' in window) ? Notification.permission : 'unsupported'));
@@ -3160,7 +3160,7 @@
     log('Queuing 90s test reminder… FULLY CLOSE the PWA after this (swipe away). Cron is ~1 min.');
     await queueTestPush90s();
     log('test queued · wait ~2 minutes with the app closed');
-    log('Must paste cloudflare-worker.dashboard.js v33 (minimal padding) or FCM may reject bodies.');
+    log('Must paste cloudflare-worker.dashboard.js v34 (minimal padding) or FCM may reject bodies.');
     log('Done. Cron * * * * * must be set on the Worker or later events will miss.');
     renderPushStatusDetail();
   }

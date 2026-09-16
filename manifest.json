@@ -22,7 +22,7 @@
   ],
   "id": "./index.html",
   "lang": "en",
-  "description": "Simple Calendar v33 \u2014 FCM-safe closed-app Web Push (minimal padding).",
+  "description": "Simple Calendar v34 \u2014 closed-app Web Push + PWA icon.",
   "categories": [
     "productivity",
     "utilities"
