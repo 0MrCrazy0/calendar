@@ -1,5 +1,5 @@
-/* Simple Calendar service worker v37 – cache, push, notificationclick */
-const CACHE_NAME = 'calendar-v37';
+/* Simple Calendar service worker v38 – cache, push, notificationclick */
+const CACHE_NAME = 'calendar-v38';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
