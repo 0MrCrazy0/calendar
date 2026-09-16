@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%236c5ce7'/%3E%3Ctext y='.9em' font-size='70' x='50%25' text-anchor='middle' fill='white'%3E📅%3C/text%3E%3C/svg%3E">
 
   <title>Simple Calendar</title>
-<!-- Simple Calendar v31 — closed-app Web Push via Cloudflare dashboard Worker -->
+<!-- Simple Calendar v32 — closed-app Web Push via Cloudflare dashboard Worker -->
   <link rel="manifest" href="manifest.json">
 
   <!-- Google Fonts Preconnect -->
@@ -1080,6 +1080,29 @@
     border-color: var(--accent);
     color: var(--accent-text);
   }
+  #pushStatusDetail, #pushPlatformHint {
+    font-size: 11px;
+    color: var(--muted);
+    margin: 4px 0 8px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+  }
+  #pushDoctorLog {
+    display: none;
+    font-size: 10px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 220px;
+    overflow: auto;
+    margin: 6px 0 8px;
+    padding: 8px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
 
   /* CLEAN PRINT STYLESHEET */
   @media print {
@@ -1367,11 +1390,19 @@
         </div>
         <p style="font-size:11px;color:var(--muted);margin:4px 0 8px;line-height:1.4;" data-i18n="lblPushRemindersHint">Paste cloudflare-worker.dashboard.js in the CF dashboard, then put that Worker URL here. In-app alerts still work without this.</p>
         <div id="pushRemindersGroup" style="display:none;">
-          <label for="pushServerUrl" style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;" data-i18n="lblPushServer">Reminder server URL</label>
-          <input type="url" id="pushServerUrl" placeholder="https://simple-calendar.YOUR_SUBDOMAIN.workers.dev" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.25);color:var(--text);font-size:13px;margin-bottom:6px;">
-          <div id="pushStatus" style="font-size:11px;color:var(--muted);margin:4px 0 6px;line-height:1.4;"></div>
+          <label for="pushServerUrl" style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;" data-i18n="lblPushServer">Cloudflare Worker URL (https://….workers.dev)</label>
+          <input type="url" id="pushServerUrl" placeholder="https://simple-calendar.YOUR_SUBDOMAIN.workers.dev" autocomplete="off" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.25);color:var(--text);font-size:13px;margin-bottom:6px;">
+          <p id="pushPlatformHint"></p>
+          <div id="pushStatus" style="font-size:12px;color:var(--muted);margin:4px 0 2px;line-height:1.4;font-weight:600;"></div>
+          <div id="pushStatusDetail"></div>
+          <div class="slider-group">
+            <label for="pushLeadSlider"><span data-i18n="lblPushLead">Push early by (minutes)</span><span id="pushLeadVal">0</span></label>
+            <input type="range" id="pushLeadSlider" min="0" max="15" value="0">
+          </div>
           <button type="button" class="action-setting-btn" id="pushSyncNowBtn" style="margin-bottom:4px;" data-i18n="btnPushSync">☁ Sync reminders now</button>
-          <button type="button" class="action-setting-btn" id="pushTestBtn" style="margin-bottom:6px;" data-i18n="btnPushTest">🧪 Test closed-app alert (~1 min)</button>
+          <button type="button" class="action-setting-btn" id="pushTestBtn" style="margin-bottom:4px;" data-i18n="btnPushTest">🧪 Test closed-app alert (~90s)</button>
+          <button type="button" class="action-setting-btn" id="pushDoctorBtn" style="margin-bottom:6px;" data-i18n="btnPushDoctor">🩺 Push doctor</button>
+          <pre id="pushDoctorLog"></pre>
         </div>
       </div>
       <div class="toggle-row">
@@ -1528,6 +1559,7 @@
       snoozeMinutes: 5,
       pushRemindersEnabled: false,
       pushServerUrl: '',
+      pushLeadMinutes: 0,
       soundEnabled: true,
       soundDuration: 5,
       soundRepeat: 1,
@@ -1557,9 +1589,11 @@
     const notifyGroup = document.getElementById('notifyOptionsGroup');
     if (notifyGroup) notifyGroup.style.display = settings.notifyEnabled ? 'block' : 'none';
     setChecked('pushRemindersToggle', settings.pushRemindersEnabled);
-    setVal('pushServerUrl', settings.pushServerUrl || (location.origin || ''));
+    setVal('pushServerUrl', settings.pushServerUrl || '');
     const pushGroup = document.getElementById('pushRemindersGroup');
     if (pushGroup) pushGroup.style.display = settings.pushRemindersEnabled ? 'block' : 'none';
+    setVal('pushLeadSlider', settings.pushLeadMinutes ?? 0);
+    setText('pushLeadVal', settings.pushLeadMinutes ?? 0);
     const soundOn = settings.soundEnabled !== false;
     ['soundDurationGroup', 'soundRepeatGroup', 'soundVolumeGroup'].forEach(id => {
       const el = document.getElementById(id);
@@ -1658,17 +1692,25 @@
       btnStopAlarm: "⏹ Stop",
       btnRequestNotify: "🔔 Allow notifications",
       lblPushReminders: "Closed-app reminders (Web Push)",
-      lblPushRemindersHint: "Paste cloudflare-worker.dashboard.js in the CF dashboard, then put that Worker URL here. In-app alerts still work without this.",
-      lblPushServer: "Worker / reminder server URL",
+      lblPushRemindersHint: "Must be your Cloudflare Worker URL (https://….workers.dev), NOT this GitHub/Pages site. Paste cloudflare-worker.dashboard.js in the dashboard first.",
+      lblPushServer: "Cloudflare Worker URL (https://….workers.dev)",
       btnPushSync: "☁ Sync reminders now",
-      btnPushTest: "🧪 Test closed-app alert (~1 min)",
+      btnPushTest: "🧪 Test closed-app alert (~90s)",
+      btnPushDoctor: "🩺 Push doctor",
+      lblPushLead: "Push early by (minutes)",
       pushStatusOff: "Closed-app push is off.",
-      pushStatusOn: "Closed-app reminders armed (dashboard Worker + cron).",
+      pushStatusOn: "Worker reachable — reminders queued.",
       pushStatusNeedPerm: "Allow notifications first, then enable closed-app reminders.",
       pushStatusNoSW: "Service worker required for closed-app push.",
-      pushStatusErr: "Could not subscribe to push. Check server URL and HTTPS/localhost.",
-      pushSynced: "Reminders synced to server",
-      pushTestQueued: "Test alert queued — fully close the app; Worker cron runs about every minute",
+      pushStatusErr: "Push not armed. Set the Worker URL and run Push doctor.",
+      pushSynced: "Queued on server",
+      pushQueuedOnServer: "Queued on server",
+      pushTestQueued: "Test queued (~90s). FULLY CLOSE this app (swipe away) and wait ~2 minutes. Do not rely on in-app timers.",
+      pushNeedWorkerUrl: "Set the Cloudflare Worker URL (https://….workers.dev) — not your GitHub/Pages site.",
+      pushWrongOrigin: "That URL is this calendar site, not the Worker. Paste https://….workers.dev",
+      pushHealthFail: "Worker not reachable. On this phone open https://YOUR-WORKER/api/health",
+      pushIosHint: "iPhone: Add to Home Screen, iOS 16.4+, allow notifications for this app (Safari tab is not enough).",
+      pushAndroidHint: "Android: Do Not Disturb / battery saver can delay the OS banner, but the Worker still queues the alert.",
       btnPrint: "🖨️ Print Month",
       lblWeekStart: "Week starts on Monday",
       confirmClearBackup: "This will permanently delete ALL marks, notes, recurring events, categories and photos.\n\nDo you want to download a backup first?",
@@ -1794,17 +1836,25 @@
       btnStopAlarm: "⏹ Itigil",
       btnRequestNotify: "🔔 Payagan ang notifications",
       lblPushReminders: "Mga paalala kahit sarado ang app (Web Push)",
-      lblPushRemindersHint: "I-paste ang cloudflare-worker.dashboard.js sa CF dashboard, tapos ilagay ang Worker URL dito. Gumagana pa rin ang in-app alert.",
-      lblPushServer: "URL ng Worker / reminder server",
+      lblPushRemindersHint: "Dapat Worker URL (https://….workers.dev), HINDI ang GitHub/Pages site. I-paste muna ang cloudflare-worker.dashboard.js sa dashboard.",
+      lblPushServer: "Cloudflare Worker URL (https://….workers.dev)",
       btnPushSync: "☁ I-sync ang mga paalala",
-      btnPushTest: "🧪 Subukan ang closed-app alert (~1 min)",
+      btnPushTest: "🧪 Subukan ang closed-app alert (~90s)",
+      btnPushDoctor: "🩺 Push doctor",
+      lblPushLead: "I-push nang mas maaga (minuto)",
       pushStatusOff: "Naka-off ang closed-app push.",
-      pushStatusOn: "Handa ang closed-app reminders (dashboard Worker + cron).",
+      pushStatusOn: "OK ang Worker — naka-queue ang mga paalala.",
       pushStatusNeedPerm: "Payagan muna ang notifications, saka i-on ang closed-app reminders.",
       pushStatusNoSW: "Kailangan ang service worker para sa closed-app push.",
-      pushStatusErr: "Hindi makapag-subscribe sa push. Tingnan ang server URL at HTTPS/localhost.",
-      pushSynced: "Na-sync ang mga paalala sa server",
-      pushTestQueued: "Naka-queue ang test — isara ang app; tumatakbo ang Worker cron ~bawat minuto",
+      pushStatusErr: "Hindi handa ang push. Ilagay ang Worker URL at patakbuhin ang Push doctor.",
+      pushSynced: "Naka-queue sa server",
+      pushQueuedOnServer: "Naka-queue sa server",
+      pushTestQueued: "Naka-queue ang test (~90s). ISARA NANG BUO ang app (swipe away) at maghintay ~2 minuto.",
+      pushNeedWorkerUrl: "Ilagay ang Cloudflare Worker URL (https://….workers.dev) — hindi ang GitHub/Pages site.",
+      pushWrongOrigin: "Iyan ang calendar site, hindi ang Worker. I-paste ang https://….workers.dev",
+      pushHealthFail: "Hindi maabot ang Worker. Buksan sa phone: https://YOUR-WORKER/api/health",
+      pushIosHint: "iPhone: Add to Home Screen, iOS 16.4+, payagan ang notifications (hindi sapat ang Safari tab).",
+      pushAndroidHint: "Android: Puwedeng ma-delay ng DND / battery saver ang banner, pero naka-queue pa rin sa Worker.",
       btnPrint: "🖨️ I-print ang Buwan",
       lblWeekStart: "Magsimula ang linggo sa Lunes",
       confirmClearBackup: "Buburahin nito ang LAHAT ng marka, tala, paulit-ulit na kaganapan, kategorya at larawan.\n\nGusto mo bang mag-download muna ng backup?",
@@ -1930,17 +1980,25 @@
       btnStopAlarm: "⏹ Stopp",
       btnRequestNotify: "🔔 Tillat varsler",
       lblPushReminders: "Varsler når appen er lukket (Web Push)",
-      lblPushRemindersHint: "Lim inn cloudflare-worker.dashboard.js i CF-dashbordet, og sett Worker-URL her. Varsler i appen fungerer uten dette.",
-      lblPushServer: "Worker / påminnelsesserver-URL",
+      lblPushRemindersHint: "Må være Cloudflare Worker-URL (https://….workers.dev), IKKE GitHub/Pages. Lim inn cloudflare-worker.dashboard.js i dashbordet først.",
+      lblPushServer: "Cloudflare Worker-URL (https://….workers.dev)",
       btnPushSync: "☁ Synkroniser påminnelser nå",
-      btnPushTest: "🧪 Test varsel med lukket app (~1 min)",
+      btnPushTest: "🧪 Test varsel med lukket app (~90s)",
+      btnPushDoctor: "🩺 Push-lege",
+      lblPushLead: "Send push tidlig (minutter)",
       pushStatusOff: "Lukket-app-push er av.",
-      pushStatusOn: "Lukket-app-påminnelser er klare (dashboard Worker + cron).",
+      pushStatusOn: "Worker er tilgjengelig — påminnelser i kø.",
       pushStatusNeedPerm: "Tillat varsler først, deretter slå på lukket-app-påminnelser.",
       pushStatusNoSW: "Service worker kreves for lukket-app-push.",
-      pushStatusErr: "Kunne ikke abonnere på push. Sjekk server-URL og HTTPS/localhost.",
-      pushSynced: "Påminnelser synkronisert til server",
-      pushTestQueued: "Testvarslet er i kø — lukk appen; Worker-cron kjører ca. hvert minutt",
+      pushStatusErr: "Push er ikke klar. Sett Worker-URL og kjør Push-lege.",
+      pushSynced: "I kø på serveren",
+      pushQueuedOnServer: "I kø på serveren",
+      pushTestQueued: "Test i kø (~90s). LUKK appene HELT (sveip vekk) og vent ca. 2 minutter.",
+      pushNeedWorkerUrl: "Sett Cloudflare Worker-URL (https://….workers.dev) — ikke GitHub/Pages.",
+      pushWrongOrigin: "Det er kalendersiden, ikke Workeren. Lim inn https://….workers.dev",
+      pushHealthFail: "Worker ikke tilgjengelig. Åpne https://YOUR-WORKER/api/health på telefonen.",
+      pushIosHint: "iPhone: Legg til på Hjem-skjerm, iOS 16.4+, tillat varsler (Safari-fane er ikke nok).",
+      pushAndroidHint: "Android: DND / batterisparing kan forsinke banneret, men Workeren køer likevel.",
       btnPrint: "🖨️ Skriv ut måned",
       lblWeekStart: "Uken starter på mandag",
       confirmClearBackup: "Dette sletter ALLE merker, notater, gjentakende hendelser, kategorier og bilder.\n\nVil du laste ned en sikkerhetskopi først?",
@@ -2496,7 +2554,9 @@
     if (snoozeTimers[id]) clearTimeout(snoozeTimers[id]);
     const delay = Math.max(1000, fireAt - Date.now());
     snoozeTimers[id] = setTimeout(() => fireDueSnoozes(true), delay);
-    if (typeof schedulePushSync === 'function') schedulePushSync();
+    if (typeof syncRemindersToServer === 'function') {
+      syncRemindersToServer({ force: true, toast: true }).catch(() => {});
+    }
   }
 
   function fireDueSnoozes(fromTimer) {
@@ -2576,22 +2636,46 @@
   }
 
   /* ═══════════════════════════════════════════════════════════
-     CLOSED-APP REMINDERS – Web Push + companion server
-     Client timers die when the process is killed; the server
-     sends `push` to sw.js at the scheduled fireAt time.
+     CLOSED-APP REMINDERS – Web Push via Cloudflare Worker
+     Never default to this page's origin (GitHub Pages). Require
+     an explicit Worker URL and await sync so closing cannot race.
      ═══════════════════════════════════════════════════════════ */
   let pushSubscription = null;
   let pushSyncTimer = null;
   let lastPushSyncSig = '';
+  let lastPushError = '';
+  let lastPushCount = 0;
+  let lastPushNextFire = null;
+  let lastPushHealth = null;
 
   function getPushServerBase() {
-    const raw = (settings.pushServerUrl || '').trim().replace(/\/$/, '');
-    if (raw) return raw;
-    // Same origin only if you later host the PWA on the Worker itself
-    if (location.protocol === 'https:' || location.protocol === 'http:') {
-      return location.origin;
+    return String(settings.pushServerUrl || '').trim().replace(/\/$/, '');
+  }
+
+  function looksLikeStaticHost(hostname) {
+    const h = String(hostname || '').toLowerCase();
+    return (
+      h.endsWith('github.io') ||
+      h.endsWith('pages.dev') ||
+      h.endsWith('gitlab.io') ||
+      h.endsWith('netlify.app') ||
+      h.endsWith('vercel.app') ||
+      h.endsWith('web.app') ||
+      h.endsWith('firebaseapp.com')
+    );
+  }
+
+  function isStandalonePwa() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+
+  function formatPushWhen(ts) {
+    if (!ts) return '—';
+    try {
+      return new Date(ts).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit', second: '2-digit' });
+    } catch (_) {
+      return String(ts);
     }
-    return '';
   }
 
   function urlBase64ToUint8Array(base64String) {
@@ -2603,11 +2687,54 @@
     return outputArray;
   }
 
+  function uint8ToB64Url(u8) {
+    let s = '';
+    const arr = u8 instanceof Uint8Array ? u8 : new Uint8Array(u8);
+    for (let i = 0; i < arr.length; i++) s += String.fromCharCode(arr[i]);
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  }
+
+  function vapidKeysEqual(a, b) {
+    if (!a || !b) return false;
+    const norm = (k) => String(k).replace(/=+$/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    return norm(a) === norm(b);
+  }
+
   function setPushStatus(msg, isError) {
     const el = document.getElementById('pushStatus');
     if (!el) return;
     el.textContent = msg || '';
-    el.style.color = isError ? 'var(--mark)' : 'var(--muted)';
+    el.style.color = isError ? 'var(--mark)' : 'var(--today)';
+    if (isError) lastPushError = msg || '';
+  }
+
+  function renderPushStatusDetail() {
+    const det = document.getElementById('pushStatusDetail');
+    if (!det) return;
+    if (!settings.pushRemindersEnabled) {
+      det.textContent = '';
+      return;
+    }
+    const reachable = lastPushHealth && lastPushHealth.ok ? 'yes' : 'no';
+    const err = lastPushError ? lastPushError : 'none';
+    const n = lastPushCount;
+    const next = formatPushWhen(lastPushNextFire);
+    det.textContent =
+      'Worker reachable: ' + reachable +
+      '\nLast error: ' + err +
+      '\n' + n + ' reminder' + (n === 1 ? '' : 's') + ' queued' +
+      '\nNext fire: ' + next;
+    const hint = document.getElementById('pushPlatformHint');
+    if (hint) {
+      if (typeof isIOSDevice === 'function' && isIOSDevice()) {
+        hint.textContent = t('pushIosHint');
+        if (!isStandalonePwa()) hint.style.color = 'var(--mark)';
+        else hint.style.color = 'var(--muted)';
+      } else {
+        hint.textContent = t('pushAndroidHint');
+        hint.style.color = 'var(--muted)';
+      }
+    }
   }
 
   function updatePushRemindersUI() {
@@ -2617,17 +2744,57 @@
     if (group) group.style.display = settings.pushRemindersEnabled ? 'block' : 'none';
     const urlEl = document.getElementById('pushServerUrl');
     if (urlEl && document.activeElement !== urlEl) {
-      urlEl.value = settings.pushServerUrl || getPushServerBase();
+      urlEl.value = settings.pushServerUrl || '';
     }
+    const leadEl = document.getElementById('pushLeadSlider');
+    const leadVal = document.getElementById('pushLeadVal');
+    if (leadEl) leadEl.value = settings.pushLeadMinutes ?? 0;
+    if (leadVal) leadVal.textContent = settings.pushLeadMinutes ?? 0;
     if (!settings.pushRemindersEnabled) {
       setPushStatus(typeof t === 'function' ? t('pushStatusOff') : 'Closed-app push is off.');
+      lastPushHealth = null;
     }
+    renderPushStatusDetail();
   }
 
-  /** Build minimal upcoming timed reminders for the server (next ~14 days). */
+  async function validatePushWorker() {
+    const base = getPushServerBase();
+    if (!base) {
+      throw new Error(t('pushNeedWorkerUrl'));
+    }
+    let parsed;
+    try { parsed = new URL(base); } catch (_) {
+      throw new Error(t('pushNeedWorkerUrl'));
+    }
+    const localHttp = parsed.protocol === 'http:' && /^(localhost|127\.0\.0\.1)$/i.test(parsed.hostname);
+    if (parsed.protocol !== 'https:' && !localHttp) {
+      throw new Error(t('pushNeedWorkerUrl'));
+    }
+    if (looksLikeStaticHost(parsed.hostname) || parsed.origin === location.origin) {
+      // Same-origin Pages / GitHub must never be treated as the Worker
+      if (!parsed.hostname.endsWith('workers.dev')) {
+        throw new Error(t('pushWrongOrigin'));
+      }
+    }
+    const res = await fetch(base + '/api/health', { credentials: 'omit' });
+    if (!res.ok) throw new Error(t('pushHealthFail') + ' (HTTP ' + res.status + ')');
+    const data = await res.json().catch(() => ({}));
+    if (!data.ok) throw new Error(t('pushHealthFail'));
+    if (!/worker/i.test(String(data.runtime || ''))) {
+      throw new Error(t('pushWrongOrigin'));
+    }
+    lastPushHealth = data;
+    if (data.hasKv === false) throw new Error('Worker has no KV binding REMINDERS');
+    if (data.hasVapid === false) throw new Error('Worker missing VAPID secrets');
+    return data;
+  }
+
+  /** Timed events queue at actual event time (optional lead minutes, default 0). Keep 10 min after fireAt. */
   function collectUpcomingRemindersForPush() {
     const out = [];
     const now = Date.now();
+    const retainMs = 10 * 60 * 1000;
+    const leadMs = Math.max(0, Math.min(15, settings.pushLeadMinutes ?? 0)) * 60 * 1000;
     const horizonDays = 14;
     const start = new Date();
     start.setHours(0, 0, 0, 0);
@@ -2643,9 +2810,8 @@
         const mm = parseInt(parts[1] || '0', 10);
         if (isNaN(hh) || isNaN(mm)) return;
         const fire = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm, 0, 0);
-        // Match in-app window: fire 1 minute before event time
-        const fireAt = fire.getTime() - 60 * 1000;
-        if (fireAt < now - 30 * 1000) return; // already past
+        const fireAt = fire.getTime() - leadMs;
+        if (fireAt < now - retainMs) return;
         const title = (n.emoji ? n.emoji + ' ' : '') + (n.text || 'Event');
         const body = `It's ${formatDisplayTime(n.time)} — time for your event`;
         const nid = dateStr + '-' + n.id;
@@ -2659,18 +2825,14 @@
         });
       });
 
-      // All-day / days-ahead: notify at 9:00 local on the day (or immediately if later today enabled)
       if (settings.notifyDaysAhead >= 0) {
         dayNotes.forEach(n => {
           if (n.completed) return;
-          if (n.time) return; // timed handled above
+          if (n.time) return;
           const fire = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 9, 0, 0, 0);
           let fireAt = fire.getTime();
-          if (i === 0 && fireAt < now) {
-            // later today: fire in 60s so server still has something useful when enabling mid-day
-            fireAt = now + 60 * 1000;
-          }
-          if (fireAt < now - 30 * 1000) return;
+          if (i === 0 && fireAt < now) fireAt = now + 15 * 1000;
+          if (fireAt < now - retainMs) return;
           if (i > settings.notifyDaysAhead) return;
           const title = (n.emoji ? n.emoji + ' ' : '') + (n.text || 'Event');
           const body = i === 0
@@ -2689,9 +2851,8 @@
       }
     }
 
-    // Pending snoozes
     loadPendingSnoozes().forEach(s => {
-      if (!s.fireAt || s.fireAt < now - 30 * 1000) return;
+      if (!s.fireAt || s.fireAt < now - retainMs) return;
       out.push({
         id: 'snooze-' + s.id,
         fireAt: s.fireAt,
@@ -2702,7 +2863,6 @@
       });
     });
 
-    // Cap payload
     out.sort((a, b) => a.fireAt - b.fireAt);
     return out.slice(0, 150);
   }
@@ -2719,21 +2879,42 @@
   async function ensurePushSubscription() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       setPushStatus(t('pushStatusNoSW'), true);
+      renderPushStatusDetail();
       return null;
     }
     if (!systemNotifyGranted()) {
       setPushStatus(t('pushStatusNeedPerm'), true);
+      renderPushStatusDetail();
       return null;
     }
+    await validatePushWorker();
+    const publicKey = await fetchVapidPublicKey();
+    const storedKey = localStorage.getItem('cal_vapid_pub') || '';
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
+
+    let existingKey = '';
+    try {
+      if (sub && sub.options && sub.options.applicationServerKey) {
+        existingKey = uint8ToB64Url(sub.options.applicationServerKey);
+      }
+    } catch (_) {}
+
+    const mismatch = !!(sub && (
+      (existingKey && !vapidKeysEqual(existingKey, publicKey)) ||
+      (storedKey && !vapidKeysEqual(storedKey, publicKey))
+    ));
+    if (sub && mismatch) {
+      try { await sub.unsubscribe(); } catch (_) {}
+      sub = null;
+    }
     if (!sub) {
-      const publicKey = await fetchVapidPublicKey();
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicKey)
       });
     }
+    try { localStorage.setItem('cal_vapid_pub', publicKey); } catch (_) {}
     pushSubscription = sub;
     const base = getPushServerBase();
     const res = await fetch(base + '/api/subscribe', {
@@ -2745,15 +2926,29 @@
     return sub;
   }
 
+  async function callTick() {
+    const base = getPushServerBase();
+    if (!base) return;
+    try {
+      await fetch(base + '/api/tick', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+    } catch (_) {}
+  }
+
   async function syncRemindersToServer(opts = {}) {
     if (!settings.pushRemindersEnabled || !settings.notifyEnabled) return false;
     try {
+      lastPushError = '';
       const sub = await ensurePushSubscription();
       if (!sub) return false;
       const reminders = collectUpcomingRemindersForPush();
       const sig = JSON.stringify(reminders.map(r => [r.id, r.fireAt]));
       if (!opts.force && sig === lastPushSyncSig) {
         setPushStatus(t('pushStatusOn'));
+        renderPushStatusDetail();
         return true;
       }
       const base = getPushServerBase();
@@ -2768,16 +2963,25 @@
       if (!res.ok) throw new Error('sync ' + res.status);
       lastPushSyncSig = sig;
       const data = await res.json().catch(() => ({}));
-      setPushStatus((t('pushStatusOn') || '') + ' · ' + (data.count != null ? data.count : reminders.length) + ' queued');
+      lastPushCount = (data.count != null) ? data.count : reminders.length;
+      lastPushNextFire = data.nextFireAt || (reminders[0] && reminders[0].fireAt) || null;
+      const n = lastPushCount;
+      setPushStatus(n + ' queued' + (lastPushNextFire ? ' · next ' + formatPushWhen(lastPushNextFire) : ''));
+      renderPushStatusDetail();
       if (opts.toast) {
-        showInAppToast(t('pushSynced'), (data.count != null ? data.count : reminders.length) + ' upcoming', 'var(--today)');
+        showInAppToast(t('pushQueuedOnServer') || t('pushSynced'), n + ' reminder' + (n === 1 ? '' : 's'), 'var(--today)');
       }
+      // Harmless if nothing due; covers missing cron for near-term items + wakes send path
+      await callTick();
       return true;
     } catch (e) {
       console.warn('[Calendar] push sync failed', e);
-      setPushStatus(t('pushStatusErr'), true);
-      if (opts.toast) {
-        showInAppToast('Push sync failed', String(e.message || e), 'var(--mark)');
+      lastPushError = String(e.message || e);
+      lastPushHealth = lastPushHealth && lastPushHealth.ok ? lastPushHealth : null;
+      setPushStatus(lastPushError, true);
+      renderPushStatusDetail();
+      if (opts.toast !== false) {
+        showInAppToast(t('pushStatusErr'), lastPushError, 'var(--mark)');
       }
       return false;
     }
@@ -2786,7 +2990,7 @@
   function schedulePushSync() {
     if (pushSyncTimer) clearTimeout(pushSyncTimer);
     pushSyncTimer = setTimeout(() => {
-      syncRemindersToServer({ force: false }).catch(() => {});
+      syncRemindersToServer({ force: false, toast: false }).catch(() => {});
     }, 800);
   }
 
@@ -2798,24 +3002,27 @@
         const sub = await reg.pushManager.getSubscription();
         if (sub) {
           const base = getPushServerBase();
-          try {
-            await fetch(base + '/api/unsubscribe', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ subscription: sub.toJSON() })
-            });
-          } catch (_) {}
-          // Keep browser subscription; user may re-enable. Unsubscribing browser-side
-          // forces a new permission flow on some platforms — leave it.
+          if (base) {
+            try {
+              await fetch(base + '/api/unsubscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subscription: sub.toJSON() })
+              });
+            } catch (_) {}
+          }
         }
       }
     } catch (_) {}
     pushSubscription = null;
     lastPushSyncSig = '';
+    lastPushCount = 0;
+    lastPushNextFire = null;
+    lastPushHealth = null;
     updatePushRemindersUI();
   }
 
-  async function queueTestPushIn30s() {
+  async function queueTestPush90s() {
     if (!settings.pushRemindersEnabled) {
       showInAppToast('Enable closed-app reminders first', '', 'var(--mark)');
       return;
@@ -2823,13 +3030,12 @@
     try {
       const sub = await ensurePushSubscription();
       if (!sub) return;
-      // ~70s ahead so the Worker cron (* * * * *) will pick it up within ~1–2 minutes
-      const fireAt = Date.now() + 70 * 1000;
+      const fireAt = Date.now() + 90 * 1000;
       const test = {
         id: 'test-' + fireAt,
         fireAt,
         title: '🧪 Test reminder',
-        body: 'Closed-app push works (Cloudflare dashboard Worker). You can reopen the calendar.',
+        body: 'Closed-app push works. Fully close the PWA (swipe away) and wait ~2 minutes.',
         tag: 'cal-test',
         url: './index.html'
       };
@@ -2844,13 +3050,97 @@
         })
       });
       if (!res.ok) throw new Error('sync ' + res.status);
+      const data = await res.json().catch(() => ({}));
       lastPushSyncSig = '';
-      showInAppToast(t('pushTestQueued'), 'Due in ~70s — cron runs about every minute', 'var(--today)');
-      setPushStatus('Test queued for ' + new Date(fireAt).toLocaleTimeString());
+      lastPushCount = data.count != null ? data.count : existing.length + 1;
+      lastPushNextFire = data.nextFireAt || fireAt;
+      lastPushError = '';
+      showInAppToast(t('pushTestQueued'), 'Due ~' + formatPushWhen(fireAt) + ' — swipe the app away now', 'var(--today)');
+      setPushStatus((lastPushCount) + ' queued · test ' + formatPushWhen(fireAt));
+      renderPushStatusDetail();
+      await callTick();
     } catch (e) {
-      showInAppToast('Test failed', String(e.message || e), 'var(--mark)');
-      setPushStatus(t('pushStatusErr'), true);
+      lastPushError = String(e.message || e);
+      showInAppToast('Test failed', lastPushError, 'var(--mark)');
+      setPushStatus(lastPushError, true);
+      renderPushStatusDetail();
     }
+  }
+
+  function doctorLog(lines) {
+    const el = document.getElementById('pushDoctorLog');
+    if (!el) return;
+    el.style.display = 'block';
+    el.textContent = lines.join('\n');
+  }
+
+  async function runPushDoctor() {
+    const lines = [];
+    const log = (s) => { lines.push(s); doctorLog(lines); };
+    log('Push doctor v32 · ' + new Date().toLocaleString());
+    log('PWA origin: ' + location.origin);
+    log('Standalone/Home Screen: ' + (isStandalonePwa() ? 'yes' : 'NO'));
+    log('Notification permission: ' + (('Notification' in window) ? Notification.permission : 'unsupported'));
+    log('iOS: ' + (typeof isIOSDevice === 'function' && isIOSDevice() ? 'yes' : 'no'));
+    const base = getPushServerBase();
+    log('Worker URL: ' + (base || '(not set)'));
+    if (!base) {
+      log('FAIL: ' + t('pushNeedWorkerUrl'));
+      setPushStatus(t('pushNeedWorkerUrl'), true);
+      renderPushStatusDetail();
+      return;
+    }
+    log('On this phone also open: ' + base + '/api/health');
+    try {
+      const health = await validatePushWorker();
+      log('health: ' + JSON.stringify(health));
+    } catch (e) {
+      log('FAIL health: ' + (e.message || e));
+      setPushStatus(String(e.message || e), true);
+      renderPushStatusDetail();
+      return;
+    }
+    try {
+      const vk = await fetchVapidPublicKey();
+      log('vapid public: ' + vk.slice(0, 16) + '… (' + vk.length + ' chars)');
+    } catch (e) {
+      log('FAIL vapid: ' + (e.message || e));
+      setPushStatus(String(e.message || e), true);
+      renderPushStatusDetail();
+      return;
+    }
+    try {
+      const sub = await ensurePushSubscription();
+      log('subscribe: ' + (sub && sub.endpoint ? 'ok ' + sub.endpoint.slice(0, 48) + '…' : 'FAIL'));
+    } catch (e) {
+      log('FAIL subscribe: ' + (e.message || e));
+      setPushStatus(String(e.message || e), true);
+      renderPushStatusDetail();
+      return;
+    }
+    const synced = await syncRemindersToServer({ force: true, toast: true });
+    log('sync: ' + (synced ? 'ok' : 'FAIL') + ' · queued=' + lastPushCount + ' · next=' + formatPushWhen(lastPushNextFire));
+    log('Queuing 90s test reminder… FULLY CLOSE the PWA after this (swipe away). Cron is ~1 min.');
+    await queueTestPush90s();
+    log('test queued · wait ~2 minutes with the app closed');
+    log('Done. Cron * * * * * must be set on the Worker or later events will miss.');
+  }
+
+  function flushPushKeepalive() {
+    try {
+      if (!settings.pushRemindersEnabled || !settings.notifyEnabled) return;
+      const base = getPushServerBase();
+      const sub = pushSubscription;
+      if (!base || !sub) return;
+      const reminders = collectUpcomingRemindersForPush();
+      fetch(base + '/api/sync-reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub.toJSON(), reminders }),
+        keepalive: true,
+        credentials: 'omit'
+      }).catch(() => {});
+    } catch (_) {}
   }
 
     function checkUpcomingNotifications(force) {
@@ -3266,6 +3556,7 @@
           oneOff.completed = e.target.checked;
           save();
           render();
+          syncRemindersToServer({ force: true, toast: true }).catch(() => {});
           return;
         }
         // Recurring: complete only this occurrence (this date)
@@ -3278,6 +3569,7 @@
           if (rec.completed) delete rec.completed;
           save();
           render();
+          syncRemindersToServer({ force: true, toast: true }).catch(() => {});
         }
       });
     });
@@ -3310,6 +3602,7 @@
         }
         save();
         render();
+        syncRemindersToServer({ force: true, toast: true }).catch(() => {});
       });
     });
 
@@ -3482,6 +3775,7 @@
     selected = next;
     current = new Date(next.getFullYear(), next.getMonth(), 1);
     render();
+    syncRemindersToServer({ force: true, toast: true }).catch(() => {});
   }
 
   // Prefer the next upcoming calendar day (today counts as upcoming).
@@ -3867,6 +4161,7 @@
     settings.language = e.target.value;
     save();
     applyLanguageStrings();
+    updatePushRemindersUI();
     render();
   });
 
@@ -4033,6 +4328,7 @@
     resetNoteForm();
     save();
     render();
+    syncRemindersToServer({ force: true, toast: true }).catch(() => {});
   });
 
   document.getElementById('settingsBtn').addEventListener('click', () => {
@@ -4254,6 +4550,20 @@
   if (pushRemindersToggle) {
     pushRemindersToggle.addEventListener('change', async e => {
       if (e.target.checked) {
+        if (pushServerUrlInput) {
+          settings.pushServerUrl = (pushServerUrlInput.value || '').trim().replace(/\/$/, '');
+          pushServerUrlInput.value = settings.pushServerUrl;
+        }
+        if (!getPushServerBase()) {
+          e.target.checked = false;
+          settings.pushRemindersEnabled = false;
+          updatePushRemindersUI();
+          showInAppToast(t('pushNeedWorkerUrl'), '', 'var(--mark)');
+          setPushStatus(t('pushNeedWorkerUrl'), true);
+          renderPushStatusDetail();
+          save();
+          return;
+        }
         if (!settings.notifyEnabled) {
           settings.notifyEnabled = true;
           notifyToggle.checked = true;
@@ -4268,16 +4578,12 @@
           return;
         }
         settings.pushRemindersEnabled = true;
-        if (pushServerUrlInput) {
-          settings.pushServerUrl = (pushServerUrlInput.value || '').trim().replace(/\/$/, '') || getPushServerBase();
-          pushServerUrlInput.value = settings.pushServerUrl;
-        }
         updatePushRemindersUI();
         save();
         const synced = await syncRemindersToServer({ force: true, toast: true });
         if (!synced) {
-          // leave enabled so user can fix URL / retry
-          setPushStatus(t('pushStatusErr'), true);
+          setPushStatus(lastPushError || t('pushStatusErr'), true);
+          renderPushStatusDetail();
         }
       } else {
         await disablePushReminders();
@@ -4286,10 +4592,10 @@
     });
   }
   if (pushServerUrlInput) {
-    pushServerUrlInput.addEventListener('change', () => {
+    pushServerUrlInput.addEventListener('change', async () => {
       settings.pushServerUrl = (pushServerUrlInput.value || '').trim().replace(/\/$/, '');
       save();
-      if (settings.pushRemindersEnabled) syncRemindersToServer({ force: true, toast: true }).catch(() => {});
+      if (settings.pushRemindersEnabled) await syncRemindersToServer({ force: true, toast: true });
     });
   }
   if (pushSyncNowBtn) {
@@ -4299,7 +4605,27 @@
   }
   if (pushTestBtn) {
     pushTestBtn.addEventListener('click', () => {
-      queueTestPushIn30s().catch(() => {});
+      queueTestPush90s().catch(() => {});
+    });
+  }
+  const pushDoctorBtn = document.getElementById('pushDoctorBtn');
+  if (pushDoctorBtn) {
+    pushDoctorBtn.addEventListener('click', () => {
+      runPushDoctor().catch(e => {
+        doctorLog(['Push doctor failed: ' + (e.message || e)]);
+      });
+    });
+  }
+  const pushLeadSlider = document.getElementById('pushLeadSlider');
+  const pushLeadVal = document.getElementById('pushLeadVal');
+  if (pushLeadSlider) {
+    pushLeadSlider.addEventListener('input', e => {
+      settings.pushLeadMinutes = +e.target.value;
+      if (pushLeadVal) pushLeadVal.textContent = settings.pushLeadMinutes;
+    });
+    pushLeadSlider.addEventListener('change', () => {
+      save();
+      if (settings.pushRemindersEnabled) syncRemindersToServer({ force: true, toast: true }).catch(() => {});
     });
   }
 
@@ -4506,10 +4832,12 @@
         applyScale();
         applyLanguageStrings();
         syncSettingsUI();
+        updatePushRemindersUI();
         renderCustomCategoriesUI();
         renderSavedThemes();
         render();
         alert('Data imported successfully!');
+        if (settings.pushRemindersEnabled) syncRemindersToServer({ force: true, toast: true }).catch(() => {});
       } catch (err) {
         alert('Invalid JSON backup file.');
       }
@@ -4943,13 +5271,17 @@
     fireDueSnoozes(true); // re-arm any pending snoozes after reload
     checkUpcomingNotifications(true);
     if (settings.pushRemindersEnabled && settings.notifyEnabled) {
-      syncRemindersToServer({ force: true }).catch(() => {});
+      syncRemindersToServer({ force: true, toast: true }).catch(() => {});
     }
   }, 2500);
 
   // Re-sync when back online
   window.addEventListener('online', () => {
-    if (settings.pushRemindersEnabled) schedulePushSync();
+    if (settings.pushRemindersEnabled) syncRemindersToServer({ force: true, toast: false }).catch(() => {});
+  });
+  window.addEventListener('pagehide', flushPushKeepalive);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPushKeepalive();
   });
 </script>
 </body>

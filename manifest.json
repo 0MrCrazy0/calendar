@@ -16,7 +16,7 @@
   ],
   "id": "./index.html",
   "lang": "en",
-  "description": "Simple Calendar v31 \u2014 closed-app reminders via Cloudflare dashboard Worker.",
+  "description": "Simple Calendar v32 \u2014 closed-app reminders that cannot silently miss a queued event.",
   "categories": [
     "productivity",
     "utilities"
