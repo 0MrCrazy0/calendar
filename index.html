@@ -13,6 +13,7 @@
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%236c5ce7'/%3E%3Ctext y='.9em' font-size='70' x='50%25' text-anchor='middle' fill='white'%3E📅%3C/text%3E%3C/svg%3E">
 
   <title>Simple Calendar</title>
+<!-- Simple Calendar v31 — closed-app Web Push via Cloudflare dashboard Worker -->
   <link rel="manifest" href="manifest.json">
 
   <!-- Google Fonts Preconnect -->
@@ -1357,6 +1358,21 @@
         </div>
         <div id="notifyPermStatus" style="font-size:11px;color:var(--muted);margin:6px 0 4px;line-height:1.4;"></div>
         <button type="button" class="action-setting-btn" id="requestNotifyBtn" style="display:none;margin-bottom:6px;" data-i18n="btnRequestNotify">🔔 Allow notifications</button>
+        <div class="toggle-row" style="margin-top:10px;">
+          <span data-i18n="lblPushReminders" style="flex:1;line-height:1.3;">Closed-app reminders (Web Push)</span>
+          <label class="switch">
+            <input type="checkbox" id="pushRemindersToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin:4px 0 8px;line-height:1.4;" data-i18n="lblPushRemindersHint">Paste cloudflare-worker.dashboard.js in the CF dashboard, then put that Worker URL here. In-app alerts still work without this.</p>
+        <div id="pushRemindersGroup" style="display:none;">
+          <label for="pushServerUrl" style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;" data-i18n="lblPushServer">Reminder server URL</label>
+          <input type="url" id="pushServerUrl" placeholder="https://simple-calendar.YOUR_SUBDOMAIN.workers.dev" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.25);color:var(--text);font-size:13px;margin-bottom:6px;">
+          <div id="pushStatus" style="font-size:11px;color:var(--muted);margin:4px 0 6px;line-height:1.4;"></div>
+          <button type="button" class="action-setting-btn" id="pushSyncNowBtn" style="margin-bottom:4px;" data-i18n="btnPushSync">☁ Sync reminders now</button>
+          <button type="button" class="action-setting-btn" id="pushTestBtn" style="margin-bottom:6px;" data-i18n="btnPushTest">🧪 Test closed-app alert (~1 min)</button>
+        </div>
       </div>
       <div class="toggle-row">
         <span data-i18n="lblWeekStart">Week starts on Monday</span>
@@ -1510,6 +1526,8 @@
       notifyDaysAhead: 1,
       toastDuration: 8,
       snoozeMinutes: 5,
+      pushRemindersEnabled: false,
+      pushServerUrl: '',
       soundEnabled: true,
       soundDuration: 5,
       soundRepeat: 1,
@@ -1538,6 +1556,10 @@
 
     const notifyGroup = document.getElementById('notifyOptionsGroup');
     if (notifyGroup) notifyGroup.style.display = settings.notifyEnabled ? 'block' : 'none';
+    setChecked('pushRemindersToggle', settings.pushRemindersEnabled);
+    setVal('pushServerUrl', settings.pushServerUrl || (location.origin || ''));
+    const pushGroup = document.getElementById('pushRemindersGroup');
+    if (pushGroup) pushGroup.style.display = settings.pushRemindersEnabled ? 'block' : 'none';
     const soundOn = settings.soundEnabled !== false;
     ['soundDurationGroup', 'soundRepeatGroup', 'soundVolumeGroup'].forEach(id => {
       const el = document.getElementById(id);
@@ -1635,6 +1657,18 @@
       lblSoundVolume: "Alarm volume",
       btnStopAlarm: "⏹ Stop",
       btnRequestNotify: "🔔 Allow notifications",
+      lblPushReminders: "Closed-app reminders (Web Push)",
+      lblPushRemindersHint: "Paste cloudflare-worker.dashboard.js in the CF dashboard, then put that Worker URL here. In-app alerts still work without this.",
+      lblPushServer: "Worker / reminder server URL",
+      btnPushSync: "☁ Sync reminders now",
+      btnPushTest: "🧪 Test closed-app alert (~1 min)",
+      pushStatusOff: "Closed-app push is off.",
+      pushStatusOn: "Closed-app reminders armed (dashboard Worker + cron).",
+      pushStatusNeedPerm: "Allow notifications first, then enable closed-app reminders.",
+      pushStatusNoSW: "Service worker required for closed-app push.",
+      pushStatusErr: "Could not subscribe to push. Check server URL and HTTPS/localhost.",
+      pushSynced: "Reminders synced to server",
+      pushTestQueued: "Test alert queued — fully close the app; Worker cron runs about every minute",
       btnPrint: "🖨️ Print Month",
       lblWeekStart: "Week starts on Monday",
       confirmClearBackup: "This will permanently delete ALL marks, notes, recurring events, categories and photos.\n\nDo you want to download a backup first?",
@@ -1759,6 +1793,18 @@
       lblSoundVolume: "Lakas ng alarm",
       btnStopAlarm: "⏹ Itigil",
       btnRequestNotify: "🔔 Payagan ang notifications",
+      lblPushReminders: "Mga paalala kahit sarado ang app (Web Push)",
+      lblPushRemindersHint: "I-paste ang cloudflare-worker.dashboard.js sa CF dashboard, tapos ilagay ang Worker URL dito. Gumagana pa rin ang in-app alert.",
+      lblPushServer: "URL ng Worker / reminder server",
+      btnPushSync: "☁ I-sync ang mga paalala",
+      btnPushTest: "🧪 Subukan ang closed-app alert (~1 min)",
+      pushStatusOff: "Naka-off ang closed-app push.",
+      pushStatusOn: "Handa ang closed-app reminders (dashboard Worker + cron).",
+      pushStatusNeedPerm: "Payagan muna ang notifications, saka i-on ang closed-app reminders.",
+      pushStatusNoSW: "Kailangan ang service worker para sa closed-app push.",
+      pushStatusErr: "Hindi makapag-subscribe sa push. Tingnan ang server URL at HTTPS/localhost.",
+      pushSynced: "Na-sync ang mga paalala sa server",
+      pushTestQueued: "Naka-queue ang test — isara ang app; tumatakbo ang Worker cron ~bawat minuto",
       btnPrint: "🖨️ I-print ang Buwan",
       lblWeekStart: "Magsimula ang linggo sa Lunes",
       confirmClearBackup: "Buburahin nito ang LAHAT ng marka, tala, paulit-ulit na kaganapan, kategorya at larawan.\n\nGusto mo bang mag-download muna ng backup?",
@@ -1883,6 +1929,18 @@
       lblSoundVolume: "Alarmvolum",
       btnStopAlarm: "⏹ Stopp",
       btnRequestNotify: "🔔 Tillat varsler",
+      lblPushReminders: "Varsler når appen er lukket (Web Push)",
+      lblPushRemindersHint: "Lim inn cloudflare-worker.dashboard.js i CF-dashbordet, og sett Worker-URL her. Varsler i appen fungerer uten dette.",
+      lblPushServer: "Worker / påminnelsesserver-URL",
+      btnPushSync: "☁ Synkroniser påminnelser nå",
+      btnPushTest: "🧪 Test varsel med lukket app (~1 min)",
+      pushStatusOff: "Lukket-app-push er av.",
+      pushStatusOn: "Lukket-app-påminnelser er klare (dashboard Worker + cron).",
+      pushStatusNeedPerm: "Tillat varsler først, deretter slå på lukket-app-påminnelser.",
+      pushStatusNoSW: "Service worker kreves for lukket-app-push.",
+      pushStatusErr: "Kunne ikke abonnere på push. Sjekk server-URL og HTTPS/localhost.",
+      pushSynced: "Påminnelser synkronisert til server",
+      pushTestQueued: "Testvarslet er i kø — lukk appen; Worker-cron kjører ca. hvert minutt",
       btnPrint: "🖨️ Skriv ut måned",
       lblWeekStart: "Uken starter på mandag",
       confirmClearBackup: "Dette sletter ALLE merker, notater, gjentakende hendelser, kategorier og bilder.\n\nVil du laste ned en sikkerhetskopi først?",
@@ -2079,6 +2137,7 @@
         }
       } catch (_) {}
     }
+    if (typeof schedulePushSync === 'function') schedulePushSync();
   }
 
   function applyTheme(){
@@ -2437,6 +2496,7 @@
     if (snoozeTimers[id]) clearTimeout(snoozeTimers[id]);
     const delay = Math.max(1000, fireAt - Date.now());
     snoozeTimers[id] = setTimeout(() => fireDueSnoozes(true), delay);
+    if (typeof schedulePushSync === 'function') schedulePushSync();
   }
 
   function fireDueSnoozes(fromTimer) {
@@ -2491,7 +2551,7 @@
             badge: NOTIFY_ICON,
             tag: options.tag || 'cal-event',
             vibrate: [120, 60, 120],
-            requireInteraction: false,
+            requireInteraction: true,
             data: options.data || {}
           });
           return true;
@@ -2515,7 +2575,285 @@
     }
   }
 
-  function checkUpcomingNotifications(force) {
+  /* ═══════════════════════════════════════════════════════════
+     CLOSED-APP REMINDERS – Web Push + companion server
+     Client timers die when the process is killed; the server
+     sends `push` to sw.js at the scheduled fireAt time.
+     ═══════════════════════════════════════════════════════════ */
+  let pushSubscription = null;
+  let pushSyncTimer = null;
+  let lastPushSyncSig = '';
+
+  function getPushServerBase() {
+    const raw = (settings.pushServerUrl || '').trim().replace(/\/$/, '');
+    if (raw) return raw;
+    // Same origin only if you later host the PWA on the Worker itself
+    if (location.protocol === 'https:' || location.protocol === 'http:') {
+      return location.origin;
+    }
+    return '';
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+    return outputArray;
+  }
+
+  function setPushStatus(msg, isError) {
+    const el = document.getElementById('pushStatus');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.style.color = isError ? 'var(--mark)' : 'var(--muted)';
+  }
+
+  function updatePushRemindersUI() {
+    const group = document.getElementById('pushRemindersGroup');
+    const toggle = document.getElementById('pushRemindersToggle');
+    if (toggle) toggle.checked = !!settings.pushRemindersEnabled;
+    if (group) group.style.display = settings.pushRemindersEnabled ? 'block' : 'none';
+    const urlEl = document.getElementById('pushServerUrl');
+    if (urlEl && document.activeElement !== urlEl) {
+      urlEl.value = settings.pushServerUrl || getPushServerBase();
+    }
+    if (!settings.pushRemindersEnabled) {
+      setPushStatus(typeof t === 'function' ? t('pushStatusOff') : 'Closed-app push is off.');
+    }
+  }
+
+  /** Build minimal upcoming timed reminders for the server (next ~14 days). */
+  function collectUpcomingRemindersForPush() {
+    const out = [];
+    const now = Date.now();
+    const horizonDays = 14;
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i <= horizonDays; i++) {
+      const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      const dateStr = key(d);
+      const dayNotes = getNotesForDate(d);
+      dayNotes.forEach(n => {
+        if (n.completed || !n.time) return;
+        const parts = String(n.time).split(':');
+        const hh = parseInt(parts[0], 10);
+        const mm = parseInt(parts[1] || '0', 10);
+        if (isNaN(hh) || isNaN(mm)) return;
+        const fire = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm, 0, 0);
+        // Match in-app window: fire 1 minute before event time
+        const fireAt = fire.getTime() - 60 * 1000;
+        if (fireAt < now - 30 * 1000) return; // already past
+        const title = (n.emoji ? n.emoji + ' ' : '') + (n.text || 'Event');
+        const body = `It's ${formatDisplayTime(n.time)} — time for your event`;
+        const nid = dateStr + '-' + n.id;
+        out.push({
+          id: nid,
+          fireAt,
+          title: String(title).slice(0, 120),
+          body: String(body).slice(0, 240),
+          tag: nid,
+          url: './index.html'
+        });
+      });
+
+      // All-day / days-ahead: notify at 9:00 local on the day (or immediately if later today enabled)
+      if (settings.notifyDaysAhead >= 0) {
+        dayNotes.forEach(n => {
+          if (n.completed) return;
+          if (n.time) return; // timed handled above
+          const fire = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 9, 0, 0, 0);
+          let fireAt = fire.getTime();
+          if (i === 0 && fireAt < now) {
+            // later today: fire in 60s so server still has something useful when enabling mid-day
+            fireAt = now + 60 * 1000;
+          }
+          if (fireAt < now - 30 * 1000) return;
+          if (i > settings.notifyDaysAhead) return;
+          const title = (n.emoji ? n.emoji + ' ' : '') + (n.text || 'Event');
+          const body = i === 0
+            ? 'You have an event today'
+            : `In ${i} day${i > 1 ? 's' : ''} • ${getLocalizedDateString(d, { weekday: 'short', month: 'short', day: 'numeric' })}`;
+          const nid = dateStr + '-' + n.id + (i === 0 ? '-allday' : '-ahead');
+          out.push({
+            id: nid,
+            fireAt,
+            title: String(title).slice(0, 120),
+            body: String(body).slice(0, 240),
+            tag: nid,
+            url: './index.html'
+          });
+        });
+      }
+    }
+
+    // Pending snoozes
+    loadPendingSnoozes().forEach(s => {
+      if (!s.fireAt || s.fireAt < now - 30 * 1000) return;
+      out.push({
+        id: 'snooze-' + s.id,
+        fireAt: s.fireAt,
+        title: String(s.title || 'Reminder').slice(0, 120),
+        body: String((s.body || 'Snoozed event') + ' (snoozed)').slice(0, 240),
+        tag: 'snooze-' + s.id,
+        url: './index.html'
+      });
+    });
+
+    // Cap payload
+    out.sort((a, b) => a.fireAt - b.fireAt);
+    return out.slice(0, 150);
+  }
+
+  async function fetchVapidPublicKey() {
+    const base = getPushServerBase();
+    const res = await fetch(base + '/api/vapid-public-key', { credentials: 'omit' });
+    if (!res.ok) throw new Error('vapid ' + res.status);
+    const data = await res.json();
+    if (!data.publicKey) throw new Error('no public key');
+    return data.publicKey;
+  }
+
+  async function ensurePushSubscription() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setPushStatus(t('pushStatusNoSW'), true);
+      return null;
+    }
+    if (!systemNotifyGranted()) {
+      setPushStatus(t('pushStatusNeedPerm'), true);
+      return null;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      const publicKey = await fetchVapidPublicKey();
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey)
+      });
+    }
+    pushSubscription = sub;
+    const base = getPushServerBase();
+    const res = await fetch(base + '/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: sub.toJSON() })
+    });
+    if (!res.ok) throw new Error('subscribe ' + res.status);
+    return sub;
+  }
+
+  async function syncRemindersToServer(opts = {}) {
+    if (!settings.pushRemindersEnabled || !settings.notifyEnabled) return false;
+    try {
+      const sub = await ensurePushSubscription();
+      if (!sub) return false;
+      const reminders = collectUpcomingRemindersForPush();
+      const sig = JSON.stringify(reminders.map(r => [r.id, r.fireAt]));
+      if (!opts.force && sig === lastPushSyncSig) {
+        setPushStatus(t('pushStatusOn'));
+        return true;
+      }
+      const base = getPushServerBase();
+      const res = await fetch(base + '/api/sync-reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: sub.toJSON(),
+          reminders
+        })
+      });
+      if (!res.ok) throw new Error('sync ' + res.status);
+      lastPushSyncSig = sig;
+      const data = await res.json().catch(() => ({}));
+      setPushStatus((t('pushStatusOn') || '') + ' · ' + (data.count != null ? data.count : reminders.length) + ' queued');
+      if (opts.toast) {
+        showInAppToast(t('pushSynced'), (data.count != null ? data.count : reminders.length) + ' upcoming', 'var(--today)');
+      }
+      return true;
+    } catch (e) {
+      console.warn('[Calendar] push sync failed', e);
+      setPushStatus(t('pushStatusErr'), true);
+      if (opts.toast) {
+        showInAppToast('Push sync failed', String(e.message || e), 'var(--mark)');
+      }
+      return false;
+    }
+  }
+
+  function schedulePushSync() {
+    if (pushSyncTimer) clearTimeout(pushSyncTimer);
+    pushSyncTimer = setTimeout(() => {
+      syncRemindersToServer({ force: false }).catch(() => {});
+    }, 800);
+  }
+
+  async function disablePushReminders() {
+    settings.pushRemindersEnabled = false;
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          const base = getPushServerBase();
+          try {
+            await fetch(base + '/api/unsubscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ subscription: sub.toJSON() })
+            });
+          } catch (_) {}
+          // Keep browser subscription; user may re-enable. Unsubscribing browser-side
+          // forces a new permission flow on some platforms — leave it.
+        }
+      }
+    } catch (_) {}
+    pushSubscription = null;
+    lastPushSyncSig = '';
+    updatePushRemindersUI();
+  }
+
+  async function queueTestPushIn30s() {
+    if (!settings.pushRemindersEnabled) {
+      showInAppToast('Enable closed-app reminders first', '', 'var(--mark)');
+      return;
+    }
+    try {
+      const sub = await ensurePushSubscription();
+      if (!sub) return;
+      // ~70s ahead so the Worker cron (* * * * *) will pick it up within ~1–2 minutes
+      const fireAt = Date.now() + 70 * 1000;
+      const test = {
+        id: 'test-' + fireAt,
+        fireAt,
+        title: '🧪 Test reminder',
+        body: 'Closed-app push works (Cloudflare dashboard Worker). You can reopen the calendar.',
+        tag: 'cal-test',
+        url: './index.html'
+      };
+      const existing = collectUpcomingRemindersForPush();
+      const base = getPushServerBase();
+      const res = await fetch(base + '/api/sync-reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: sub.toJSON(),
+          reminders: [test].concat(existing).slice(0, 150)
+        })
+      });
+      if (!res.ok) throw new Error('sync ' + res.status);
+      lastPushSyncSig = '';
+      showInAppToast(t('pushTestQueued'), 'Due in ~70s — cron runs about every minute', 'var(--today)');
+      setPushStatus('Test queued for ' + new Date(fireAt).toLocaleTimeString());
+    } catch (e) {
+      showInAppToast('Test failed', String(e.message || e), 'var(--mark)');
+      setPushStatus(t('pushStatusErr'), true);
+    }
+  }
+
+    function checkUpcomingNotifications(force) {
     // Always process due snoozes (independent of the event time window)
     fireDueSnoozes(false);
 
@@ -3888,15 +4226,82 @@
         showInAppToast('In-app alerts on', 'System alerts need permission — tap Allow notifications if shown', 'var(--accent)');
       }
       setTimeout(() => checkUpcomingNotifications(true), 300);
+      if (settings.pushRemindersEnabled) schedulePushSync();
     } else {
       updateNotifyPermUI();
+      if (settings.pushRemindersEnabled) {
+        disablePushReminders().then(() => save());
+      }
     }
   });
 
   updateNotifyPermUI();
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') updateNotifyPermUI();
+    if (document.visibilityState === 'visible') {
+      updateNotifyPermUI();
+      checkUpcomingNotifications(true);
+      if (settings.pushRemindersEnabled) syncRemindersToServer({ force: false }).catch(() => {});
+    }
   });
+
+  // Closed-app Web Push controls
+  updatePushRemindersUI();
+  const pushRemindersToggle = document.getElementById('pushRemindersToggle');
+  const pushServerUrlInput = document.getElementById('pushServerUrl');
+  const pushSyncNowBtn = document.getElementById('pushSyncNowBtn');
+  const pushTestBtn = document.getElementById('pushTestBtn');
+
+  if (pushRemindersToggle) {
+    pushRemindersToggle.addEventListener('change', async e => {
+      if (e.target.checked) {
+        if (!settings.notifyEnabled) {
+          settings.notifyEnabled = true;
+          notifyToggle.checked = true;
+          notifyOptionsGroup.style.display = 'block';
+        }
+        const ok = await requestNotificationPermission(true);
+        if (!ok) {
+          e.target.checked = false;
+          settings.pushRemindersEnabled = false;
+          updatePushRemindersUI();
+          save();
+          return;
+        }
+        settings.pushRemindersEnabled = true;
+        if (pushServerUrlInput) {
+          settings.pushServerUrl = (pushServerUrlInput.value || '').trim().replace(/\/$/, '') || getPushServerBase();
+          pushServerUrlInput.value = settings.pushServerUrl;
+        }
+        updatePushRemindersUI();
+        save();
+        const synced = await syncRemindersToServer({ force: true, toast: true });
+        if (!synced) {
+          // leave enabled so user can fix URL / retry
+          setPushStatus(t('pushStatusErr'), true);
+        }
+      } else {
+        await disablePushReminders();
+        save();
+      }
+    });
+  }
+  if (pushServerUrlInput) {
+    pushServerUrlInput.addEventListener('change', () => {
+      settings.pushServerUrl = (pushServerUrlInput.value || '').trim().replace(/\/$/, '');
+      save();
+      if (settings.pushRemindersEnabled) syncRemindersToServer({ force: true, toast: true }).catch(() => {});
+    });
+  }
+  if (pushSyncNowBtn) {
+    pushSyncNowBtn.addEventListener('click', () => {
+      syncRemindersToServer({ force: true, toast: true }).catch(() => {});
+    });
+  }
+  if (pushTestBtn) {
+    pushTestBtn.addEventListener('click', () => {
+      queueTestPushIn30s().catch(() => {});
+    });
+  }
 
   notifyDaysSlider.addEventListener('input', e => {
     settings.notifyDaysAhead = +e.target.value;
@@ -4492,35 +4897,37 @@
   const installBtn = document.getElementById('installBtn');
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-  if (isStandalone) {
+  if (isStandalone && installBtn) {
     installBtn.style.display = 'none';
   }
 
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredPrompt = e;
-    if (!isStandalone) {
+    if (!isStandalone && installBtn) {
       installBtn.style.display = 'block';
     }
   });
 
   window.addEventListener('appinstalled', () => {
-    installBtn.style.display = 'none';
+    if (installBtn) installBtn.style.display = 'none';
     deferredPrompt = null;
   });
 
-  installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      installBtn.style.display = 'none';
-    }
-    deferredPrompt = null;
-  });
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        installBtn.style.display = 'none';
+      }
+      deferredPrompt = null;
+    });
+  }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').then(reg => reg.update()).catch(() => {});
+    navigator.serviceWorker.register('./sw.js').then(reg => reg.update()).catch(() => {});
   }
 
   setupTextStyleButtons();
@@ -4528,13 +4935,22 @@
   applyScale();
   applyLanguageStrings();
   syncSettingsUI();
+  updatePushRemindersUI();
   startSmoothClock();
   render();
   // Initial notification check (after a short delay so UI is ready)
   setTimeout(() => {
     fireDueSnoozes(true); // re-arm any pending snoozes after reload
     checkUpcomingNotifications(true);
+    if (settings.pushRemindersEnabled && settings.notifyEnabled) {
+      syncRemindersToServer({ force: true }).catch(() => {});
+    }
   }, 2500);
+
+  // Re-sync when back online
+  window.addEventListener('online', () => {
+    if (settings.pushRemindersEnabled) schedulePushSync();
+  });
 </script>
 </body>
 </html>
