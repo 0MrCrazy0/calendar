@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%236c5ce7'/%3E%3Ctext y='.9em' font-size='70' x='50%25' text-anchor='middle' fill='white'%3E📅%3C/text%3E%3C/svg%3E">
 
   <title>Simple Calendar</title>
-<!-- Simple Calendar v34 — FCM-safe Web Push (minimal aes128gcm padding) -->
+<!-- Simple Calendar v36 — FCM-safe Web Push (minimal aes128gcm padding) -->
   <link rel="manifest" href="manifest.json">
 
   <!-- Google Fonts Preconnect -->
@@ -1390,7 +1390,7 @@
             <span class="slider"></span>
           </label>
         </div>
-        <p style="font-size:11px;color:var(--muted);margin:4px 0 8px;line-height:1.4;" data-i18n="lblPushRemindersHint">Paste cloudflare-worker.dashboard.js in the CF dashboard, then put that Worker URL here. In-app alerts still work without this.</p>
+        <p style="font-size:11px;color:var(--muted);margin:4px 0 8px;line-height:1.4;" data-i18n="lblPushRemindersHint">Paste cloudflare-worker.dashboard.js v36 (auto VAPID). Put the Worker URL here — no VAPID secrets needed. In-app alerts still work without this.</p>
         <div id="pushRemindersGroup" style="display:none;">
           <label for="pushServerUrl" style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;" data-i18n="lblPushServer">Cloudflare Worker URL (https://….workers.dev)</label>
           <input type="url" id="pushServerUrl" placeholder="https://simple-calendar.YOUR_SUBDOMAIN.workers.dev" autocomplete="off" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.25);color:var(--text);font-size:13px;margin-bottom:6px;">
@@ -1694,7 +1694,7 @@
       btnStopAlarm: "⏹ Stop",
       btnRequestNotify: "🔔 Allow notifications",
       lblPushReminders: "Closed-app reminders (Web Push)",
-      lblPushRemindersHint: "Must be your Cloudflare Worker URL (https://….workers.dev), NOT this GitHub/Pages site. Paste cloudflare-worker.dashboard.js in the dashboard first.",
+      lblPushRemindersHint: "Must be your Cloudflare Worker URL (https://….workers.dev), NOT this GitHub/Pages site. Paste Worker v36 first — VAPID auto-mints in KV (secrets optional).",
       lblPushServer: "Cloudflare Worker URL (https://….workers.dev)",
       btnPushSync: "☁ Sync reminders now",
       btnPushTest: "🧪 Test closed-app alert (~90s)",
@@ -2787,7 +2787,13 @@
     }
     lastPushHealth = data;
     if (data.hasKv === false) throw new Error('Worker has no KV binding REMINDERS');
-    if (data.hasVapid === false) throw new Error('Worker missing VAPID secrets');
+    const ver = String(data.version || '');
+    if (ver && Number(ver) < 36) {
+      throw new Error('Worker version is ' + ver + ' — re-paste cloudflare-worker.dashboard.js v36 (auto VAPID)');
+    }
+    if (data.hasVapid !== true) {
+      throw new Error('Worker hasVapid=false — ensure KV binding REMINDERS exists (keys auto-mint on first use)');
+    }
     return data;
   }
 
@@ -3096,11 +3102,19 @@
   async function runPushDoctor() {
     const lines = [];
     const log = (s) => { lines.push(s); doctorLog(lines); };
-    log('Push doctor v34 · ' + new Date().toLocaleString());
+    const explainErr = (status) => {
+      const s = Number(status);
+      if (s === 403) return '403 → often VAPID mismatch (re-paste secrets + force resubscribe)';
+      if (s === 410 || s === 404) return String(s) + ' → subscription gone (re-subscribe)';
+      if (s === 413) return '413 → payload too large (must use v36 bundled Worker)';
+      if (s === 400) return '400 → bad request / crypto (must use v36 bundled Worker)';
+      return '';
+    };
+    log('Push doctor v36 · ' + new Date().toLocaleString());
     log('PWA origin: ' + location.origin);
     log('Standalone/Home Screen: ' + (isStandalonePwa() ? 'yes' : 'NO'));
     log('Notification permission: ' + (('Notification' in window) ? Notification.permission : 'unsupported'));
-    log('iOS: ' + (typeof isIOSDevice === 'function' && isIOSDevice() ? 'yes' : 'no'));
+    log('iOS: ' + (typeof isIOSDevice === 'function' && isIOSDevice() ? 'yes — Home Screen + iOS 16.4+ required' : 'no'));
     const base = getPushServerBase();
     log('Worker URL: ' + (base || '(not set)'));
     if (!base) {
@@ -3110,10 +3124,23 @@
       return;
     }
     log('On this phone also open: ' + base + '/api/health');
+    log('And: ' + base + '/api/diag');
     try {
       const health = await validatePushWorker();
       log('health: ' + JSON.stringify(health));
+      if (Number(health.version) < 36) {
+        log('WARN: health.version is ' + health.version + ' — re-paste ENTIRE cloudflare-worker.dashboard.js v36');
+      }
+      log('hasVapid=' + health.hasVapid + ' vapidSource=' + (health.vapidSource || '?'));
+      if (health.hasVapid !== true) {
+        log('FAIL: hasVapid must be true. Bind KV REMINDERS — Worker auto-mints keys into meta:vapid (no manual secrets).');
+      }
+      if (health.vapidSource === 'kv') log('OK: VAPID from KV auto-generate (no secrets needed).');
+      if (health.vapidSource === 'env') log('OK: VAPID from optional env secrets.');
       if (health.lastPush) log('health.lastPush: ' + JSON.stringify(health.lastPush));
+      if (health.subscriptionCount === 0) {
+        log('HINT: subscriptionCount=0 — subscribe has not reached the Worker yet (wrong URL / blocked).');
+      }
     } catch (e) {
       log('FAIL health: ' + (e.message || e));
       setPushStatus(String(e.message || e), true);
@@ -3123,6 +3150,8 @@
     try {
       const vk = await fetchVapidPublicKey();
       log('vapid public: ' + vk.slice(0, 16) + '… (' + vk.length + ' chars)');
+      // Force resubscribe if key changed (ensurePushSubscription already does mismatch)
+      try { localStorage.setItem('cal_vapid_pub', ''); } catch (_) {}
     } catch (e) {
       log('FAIL vapid: ' + (e.message || e));
       setPushStatus(String(e.message || e), true);
@@ -3130,6 +3159,14 @@
       return;
     }
     try {
+      // Force unsubscribe then subscribe with current Worker key
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        const old = await reg.pushManager.getSubscription();
+        if (old) {
+          try { await old.unsubscribe(); log('force unsubscribed old PushSubscription'); } catch (_) {}
+        }
+      }
       const sub = await ensurePushSubscription();
       log('subscribe: ' + (sub && sub.endpoint ? 'ok ' + sub.endpoint.slice(0, 48) + '…' : 'FAIL'));
     } catch (e) {
@@ -3142,26 +3179,44 @@
     log('sync: ' + (synced ? 'ok' : 'FAIL') + ' · queued=' + lastPushCount + ' · next=' + formatPushWhen(lastPushNextFire));
     log('POST /api/tick (force send of anything due)…');
     const tick = await callTick();
-    log('tick: ' + JSON.stringify(tick));
+    log('tick full JSON: ' + JSON.stringify(tick));
     if (tick && tick.sent > 0) {
       log('SUCCESS: sent=' + tick.sent + ' (FCM/APNs accepted at least one payload)');
       setPushStatus('tick sent=' + tick.sent, false);
     } else if (tick && tick.lastErrors && tick.lastErrors.length) {
-      log('FCM/APNs errors (fix Worker paste if status 413/400):');
-      tick.lastErrors.forEach((err, i) => log('  [' + i + '] ' + JSON.stringify(err)));
+      log('Push endpoint errors:');
+      tick.lastErrors.forEach((err, i) => {
+        log('  [' + i + '] ' + JSON.stringify(err) + ' ' + explainErr(err && err.status));
+      });
       setPushStatus('tick errors — see Push doctor log', true);
     } else {
       log('tick sent=0 (nothing due yet — OK if next fire is in the future)');
     }
     try {
-      const health2 = await (await fetch(base + '/api/health', { credentials: 'omit' })).json();
-      if (health2.lastPush) log('health.lastPush after tick: ' + JSON.stringify(health2.lastPush));
-    } catch (_) {}
-    log('Queuing 90s test reminder… FULLY CLOSE the PWA after this (swipe away). Cron is ~1 min.');
+      const diag = await (await fetch(base + '/api/diag', { credentials: 'omit' })).json();
+      log('diag: ' + JSON.stringify(diag));
+      log('diag.subscriptionCount=' + diag.subscriptionCount + ' reminderCount=' + diag.reminderCount);
+      if (diag.subscriptionCount === 0) {
+        log('CLEAR: subscriptionCount=0 → subscribe never reached Worker. Check Worker URL is workers.dev, not Pages.');
+      }
+      if (Array.isArray(diag.nextFires)) {
+        diag.nextFires.forEach((f, i) => log('  next[' + i + '] ' + f.fireAtIso + ' ' + (f.title || '') + ' attempts=' + (f.attempts || 0)));
+      }
+      if (diag.lastPush && diag.lastPush.lastErrors) {
+        (diag.lastPush.lastErrors || []).forEach((err, i) => {
+          log('  lastPush.err[' + i + '] ' + JSON.stringify(err) + ' ' + explainErr(err && err.status));
+        });
+      }
+    } catch (e) {
+      log('FAIL diag: ' + (e.message || e));
+    }
+    log('Queuing 90s test reminder… FULLY CLOSE the PWA (swipe away). Cron ~1 min.');
     await queueTestPush90s();
-    log('test queued · wait ~2 minutes with the app closed');
-    log('Must paste cloudflare-worker.dashboard.js v34 (minimal padding) or FCM may reject bodies.');
-    log('Done. Cron * * * * * must be set on the Worker or later events will miss.');
+    log('test queued · wait ~2 minutes with app closed + phone locked');
+    log('MUST paste entire cloudflare-worker.dashboard.js v36 (bundled library + auto VAPID in KV).');
+    log('No manual VAPID paste needed — first enable may take ~1s to mint keys (health.vapidSource=kv).');
+    log('iPhone: Add to Home Screen, iOS 16.4+, notifications for this PWA (Safari tab is not enough).');
+    log('Done.');
     renderPushStatusDetail();
   }
 
