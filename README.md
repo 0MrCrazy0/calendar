@@ -1,4 +1,4 @@
-![Simple Calendar](banner.png)
+![Simple Calendar](icon.jpeg)
 
 # Simple Calendar
 
