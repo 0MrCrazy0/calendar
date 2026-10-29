@@ -1,11 +1,11 @@
 ![Simple Calendar](icon.jpeg)
-https://github.com/0MrCrazy0/calendar.git
+
 # Simple Calendar
 
 A simple, friendly calendar that works **completely offline**. Add your events and reminders, close the app, and get alerted on time. No account, no cloud, no internet needed.
 
 Available for **Android** and **Windows**. (iPhone isn't supported yet.)
-
+see here: https://github.com/0MrCrazy0/calendar.git
 ---
 
 ## ✨ Features
