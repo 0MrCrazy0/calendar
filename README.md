@@ -5,13 +5,13 @@
 A simple, friendly calendar that works **completely offline**. Add your events and reminders, close the app, and get alerted on time. No account, no cloud, no internet needed.
 
 Available for **Android** and **Windows**. (iPhone isn't supported yet.)
-see here: https://github.com/0MrCrazy0/calendar.git
+
 ---
 
 ## ✨ Features
 
 - 📅 Month view with a **Today** button and quick **+ Add Event**
-- 🔔 Reminders with sound and **Snooze**
+- ⏰ Real alarm sounds: 5 built-in tones, chosen globally or per event, with preview, volume and **Snooze**. They ring until you stop them, and on Android they use the alarm volume.
 - 🔁 Repeating events: daily, weekly, fortnightly, monthly, or yearly
 - 🏷️ Colour categories (Work, Personal, Family, Fitness, Urgent, and more) plus your own custom categories
 - 📍 Mark special days
@@ -35,7 +35,9 @@ see here: https://github.com/0MrCrazy0/calendar.git
 
 ## ⬇️ Download & Install
 
-Get the files from the list of files at the top of this page (or from **Releases**).
+Get the files from the list of files at the top of this page, or from **GitHub Releases** (the **Releases** link on the right). The latest release, **v39**, has the full Windows installer as a single file, so you don't need to join any parts.
+
+The Windows installer in this repo comes in 5 `.part` files. See [README-Windows.md](README-Windows.md) for the one-line join command. Android setup is in [README-Android.md](README-Android.md).
 
 ### 📱 Android: `Simple-Calendar-Android-Installer` (.apk)
 
@@ -63,6 +65,9 @@ Get the files from the list of files at the top of this page (or from **Releases
 ---
 
 ## ❓ FAQ / Troubleshooting
+
+**I see the notification but hear no sound.**
+Update to **v39**. Older versions only played a short notification blip, which silent mode or Focus Assist could mute. v39 rings a real alarm. On Android, turn up the **alarm volume**.
 
 **I didn't get an alert.**
 Check that notifications and alarms are allowed, battery is **Unrestricted** (Android), and the app is in the tray (Windows). If it was a repeating event, open the app to refresh the schedule.
