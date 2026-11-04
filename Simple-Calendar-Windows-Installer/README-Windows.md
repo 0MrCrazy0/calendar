@@ -17,6 +17,11 @@ It joins the parts and opens the installer for you.
 - Closing the window keeps the app running in the **tray** (by the clock), so alarms still ring.
 - Alarms only ring while your PC is on.
 
+## ⬆️ Updating
+The app checks for updates once a day and shows **Update available** when a new version is out. You can also use **Options → Check for updates**, or right-click the tray icon and choose **Check for updates**.
+
+Download the new parts and run **Install-Simple-Calendar.bat** again. It installs over the old version, and your events, marks and settings are kept.
+
 ## ❓ Help
 - **"Cannot find the file":** make sure all 6 files are in the same folder.
 - **Installer won't open:** the joined file should be about 94 MB. If it's smaller, download the parts again.
