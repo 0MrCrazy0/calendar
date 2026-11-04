@@ -14,9 +14,13 @@ Go to **Settings > Apps > Simple Calendar > Battery** and choose **Unrestricted*
 ## 🧪 Quick test
 Create an event 2 minutes from now, close the app and lock your phone. The alarm should ring.
 
+## ⬆️ Updating
+The app checks for updates once a day and shows **Update available** when a new version is out. You can also tap **Options → Check for updates**.
+
+Tap **Download**, open the new .apk and install it **over** the old app. Don't uninstall first. Your events, marks and settings are kept.
+
 ## ❓ Help
 - **No sound:** check the alarm volume and that battery is set to **Unrestricted**.
 - **"App not installed":** uninstall the old version, then try again.
-- **Updating:** install the new .apk over the old one. Your events stay.
 
 [⬅️ Back to Simple Calendar](https://github.com/0MrCrazy0/calendar)
