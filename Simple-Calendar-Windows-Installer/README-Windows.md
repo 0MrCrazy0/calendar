@@ -18,7 +18,7 @@ It joins the parts and opens the installer for you.
 - Alarms only ring while your PC is on.
 
 ## ❓ Help
-- **"Cannot find the file":** make sure all 5 parts are in the same folder.
+- **"Cannot find the file":** make sure all 6 files are in the same folder.
 - **Installer won't open:** the joined file should be about 94 MB. If it's smaller, download the parts again.
 - **No alarm:** check the tray icon is there and Focus / Do not disturb is off.
 
