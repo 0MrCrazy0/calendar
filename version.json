@@ -1,0 +1,6 @@
+{
+  "version": 40,
+  "notes": "Missed-alarm alerts, permission warnings, mark colour fix, and many reliability fixes.",
+  "android": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Android-Installer/Simple-Calendar-Android-Installer.apk",
+  "windows": "https://github.com/0MrCrazy0/calendar/blob/main/Simple-Calendar-Windows-Installer/README-Windows.md"
+}

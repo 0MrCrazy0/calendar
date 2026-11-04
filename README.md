@@ -34,6 +34,9 @@ Then double-click **Install-Simple-Calendar.bat**. It builds and opens the insta
 - 🌐 English, Norwegian and Tagalog
 - 🔒 Private: no account, no cloud, works offline
 
+## ⬆️ Updating
+The app tells you when a new version is out (Options → Check for updates). Install the new version over the old one. Your events and settings are kept.
+
 ## ✅ To never miss an alarm
 - **Android:** allow notifications and alarms, and set Battery to **Unrestricted**. Open the app at least once a month.
 - **Windows:** keep the app running in the tray (it starts with Windows).
