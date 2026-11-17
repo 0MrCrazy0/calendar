@@ -1,67 +1,66 @@
 {
-  "version": 42,
-  "notes": "14 alarm tones, the calendar fills the whole screen on PC, full Norwegian and Tagalog, and one-tap updates from inside the app.",
+  "version": 44,
+  "notes": "New installs start with the 12-hour clock everywhere, and backup and restore are safer and clearer on Android and Windows.",
+  "notes_no": "Nye installasjoner starter med 12-timers klokke overalt, og sikkerhetskopi og gjenoppretting er tryggere og tydeligere på Android og Windows.",
+  "notes_tl": "Sa bagong install, 12-oras na orasan ang simula saanman, at mas ligtas at mas malinaw na ang backup at restore sa Android at Windows.",
   "whatsNew": {
     "en": [
-      "9 new alarm tones (14 in total), each with a preview in Options.",
-      "On a PC the calendar now fills the whole window — maximise it or press F11 for full screen.",
-      "Fully translated into Norwegian and Tagalog, including alarms and notifications.",
-      "More snooze choices right on the alarm (your usual time, 10 or 30 minutes) and smaller fixes.",
-      "Updates can now be downloaded and installed from inside the app."
+      "New installs start with the 12-hour clock in every country. Switch to 24-hour in Settings.",
+      "Backups save to Downloads on Android (and can be shared) and use the Save dialog on Windows.",
+      "Restore says exactly what is in the file, replaces your data without duplicates and sets alarms again straight away.",
+      "Damaged, empty or wrong files are refused with a clear message, and nothing is changed."
     ],
     "no": [
-      "9 nye alarmtoner (14 i alt), hver med forhåndslytting i Innstillinger.",
-      "På PC fyller kalenderen nå hele vinduet — maksimer det eller trykk F11 for fullskjerm.",
-      "Fullt oversatt til norsk og tagalog, også alarmer og varsler.",
-      "Flere slumrevalg rett på alarmen (vanlig tid, 10 eller 30 minutter) og mindre rettelser.",
-      "Oppdateringer kan nå lastes ned og installeres direkte i appen."
+      "Nye installasjoner starter med 12-timers klokke i alle land. Bytt til 24 timer i Innstillinger.",
+      "Sikkerhetskopier lagres i Nedlastinger på Android (og kan deles) og bruker Lagre-vinduet på Windows.",
+      "Gjenoppretting viser nøyaktig hva filen inneholder, erstatter dataene uten duplikater og setter alarmene på nytt med en gang.",
+      "Skadde, tomme eller feil filer blir avvist med en tydelig melding, og ingenting endres."
     ],
     "tl": [
-      "9 bagong tunog ng alarm (14 lahat), bawat isa ay mapapakinggan muna sa Options.",
-      "Sa PC, pinupuno na ng kalendaryo ang buong window — i-maximize o pindutin ang F11 para sa buong screen.",
-      "Buong naisalin sa Norwegian at Tagalog, pati ang mga alarm at notification.",
-      "Mas maraming pagpipilian sa pag-snooze mismo sa alarm (karaniwang oras mo, 10 o 30 minuto) at maliliit na ayos.",
-      "Puwede nang i-download at i-install ang mga update mula mismo sa app."
+      "Sa bagong install, 12-oras na orasan ang simula sa bawat bansa. Lumipat sa 24-oras sa Settings.",
+      "Sa Android, nase-save ang backup sa Downloads (at puwedeng i-share); sa Windows, ginagamit ang Save window.",
+      "Ipinapakita ng Restore kung ano mismo ang laman ng file, pinapalitan ang datos nang walang doble at agad na itinatakda muli ang mga alarm.",
+      "Tinatanggihan ang sira, walang laman o maling file nang may malinaw na mensahe, at walang binabago."
     ]
   },
-  "android": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Android-Installer/Simple-Calendar-v42.apk",
+  "android": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Android-Installer/Simple-Calendar-v44.apk",
   "windows": "https://github.com/0MrCrazy0/calendar/blob/main/Simple-Calendar-Windows-Installer/README-Windows.md",
   "apk": {
-    "url": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Android-Installer/Simple-Calendar-v42.apk",
-    "sha256": "03f2c136aa14f284c0119fb940b67b5387dd60d321189ef6836120a0c891fac2",
-    "size": 4868482
+    "url": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Android-Installer/Simple-Calendar-v44.apk",
+    "sha256": "42cdc2546f7b4239b423af708ee436737edde7a7726aa644bff815a2704dc70c",
+    "size": 4877774
   },
   "win": {
     "exe": {
-      "name": "Simple-Calendar-Windows-Installer-v42.exe",
-      "sha256": "42615e3648671629f6a23abd7dd39a252635318c31b4551830907c782cfd25fc",
-      "size": 99624353
+      "name": "Simple-Calendar-Windows-Installer-v44.exe",
+      "sha256": "b22abc5a1e2aee373ed1000a4bf3a8e3a34833d721d8ca13be7f3c018265c51f",
+      "size": 99650388
     },
     "parts": [
       {
-        "url": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v42.exe.00.part",
-        "sha256": "91333a209ee5677cdeccb17eee90d6d9104d265ecf4c99a60d4718a0da8cd8e6",
+        "url": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v44.exe.00.part",
+        "sha256": "984b49d2171ba2b7a8b50b008b89d9c64913bd87b2b66323aa4729d8c9d4feeb",
         "size": 20971520
       },
       {
-        "url": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v42.exe.01.part",
-        "sha256": "2ed72f702198b2eb3fb1bdd79e008d9f7d53d1f7f8e8f3113b26d2ce7d7f3da9",
+        "url": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v44.exe.01.part",
+        "sha256": "be0383a611dc7fcd2c48ec2cba2639b53d74cdfeae7ff5eed0a6219b1319ba60",
         "size": 20971520
       },
       {
-        "url": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v42.exe.02.part",
-        "sha256": "a94f1222910a0e9aca6a97fb607c4353b0dadca476bb55bbbdb9b38e56341f31",
+        "url": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v44.exe.02.part",
+        "sha256": "0caef0d7dea4a7bb421eb11922afce8acaa8ef6c7c1b69a3222eb0e22e0b7c3b",
         "size": 20971520
       },
       {
-        "url": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v42.exe.03.part",
-        "sha256": "0159b311ee5445de475563d8855ca4ca5eb2b5139ea01a9fef96d3aabbd5b548",
+        "url": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v44.exe.03.part",
+        "sha256": "5d00f60eeb29465dd2c387a0754e11e794b4b44c6a0f77ae386c11f23c722d5a",
         "size": 20971520
       },
       {
-        "url": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v42.exe.04.part",
-        "sha256": "6fc0c4639479c0a881cf7c42369caa8cb311dc1bf462829146970e32ad50f9d2",
-        "size": 15738273
+        "url": "https://github.com/0MrCrazy0/calendar/raw/refs/heads/main/Simple-Calendar-Windows-Installer/Simple-Calendar-Windows-Installer-v44.exe.04.part",
+        "sha256": "9a93cc2396f45e198ca3ff2e76247d0dad363136a4096d639b6b92da73ef21f0",
+        "size": 15764308
       }
     ]
   }
